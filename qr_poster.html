@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRポスター生成 — 鎌倉妖怪守護神おみくじ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===== Editor UI ===== */
+:root {
+  --gold: #c9972a;
+  --gold-light: #f0c040;
+  --ink: #1a1008;
+  --paper: #f5efe0;
+  --vermilion: #c0392b;
+  --serif: 'Noto Serif JP', serif;
+  --sans: 'Noto Sans JP', sans-serif;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--sans);
+  background: #0e0b07;
+  color: var(--paper);
+  min-height: 100vh;
+  padding: 32px 16px 80px;
+}
+
+.editor-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.editor-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.editor-header h1 {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  color: var(--gold-light);
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+
+.editor-header p {
+  font-size: 0.82rem;
+  color: rgba(245,239,224,0.4);
+  letter-spacing: 0.1em;
+}
+
+.editor-card {
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(201,151,42,0.25);
+  border-radius: 16px;
+  padding: 28px 24px;
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(201,151,42,0.8);
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+  font-family: var(--serif);
+}
+
+.field-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(245,239,224,0.15);
+  border-radius: 10px;
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+  margin-bottom: 16px;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: rgba(201,151,42,0.55);
+}
+
+.field-input::placeholder { color: rgba(245,239,224,0.2); }
+
+.spot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spot-chip {
+  padding: 8px 12px;
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(245,239,224,0.12);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: rgba(245,239,224,0.5);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-family: var(--serif);
+}
+
+.spot-chip:hover, .spot-chip.active {
+  background: rgba(201,151,42,0.12);
+  border-color: rgba(201,151,42,0.45);
+  color: var(--gold-light);
+}
+
+.generate-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--vermilion), #8b1a1a);
+  border: none;
+  border-radius: 100px;
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(192,57,43,0.4);
+  transition: all 0.3s;
+  margin-bottom: 12px;
+}
+
+.generate-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+.print-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(201,151,42,0.12);
+  border: 1px solid rgba(201,151,42,0.4);
+  border-radius: 100px;
+  color: var(--gold-light);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: none;
+}
+
+.print-btn:hover { background: rgba(201,151,42,0.22); }
+.print-btn.show { display: block; }
+
+.preview-label {
+  font-size: 0.75rem;
+  color: rgba(245,239,224,0.3);
+  text-align: center;
+  letter-spacing: 0.15em;
+  margin: 24px 0 16px;
+  display: none;
+}
+
+.preview-label.show { display: block; }
+
+/* ===== POSTER (印刷対象) ===== */
+#poster {
+  display: none;
+  width: 600px;
+  margin: 0 auto;
+  background: #f5efe0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+
+#poster.show { display: block; }
+
+/* 和紙テクスチャ風背景 */
+#poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5efe0'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='%23e8dfc8' opacity='0.6'/%3E%3Ccircle cx='3' cy='3' r='0.5' fill='%23e8dfc8' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.poster-inner {
+  position: relative;
+  z-index: 1;
+  padding: 48px 44px 44px;
+}
+
+/* 上部朱色帯 */
+.poster-top-bar {
+  background: #c0392b;
+  height: 6px;
+  margin: -48px -44px 36px;
+  position: relative;
+}
+
+.poster-top-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0; right: 0;
+  height: 4px;
+  background: #c9972a;
+}
+
+/* タイトル */
+.poster-subtitle {
+  font-family: var(--serif);
+  font-size: 11px;
+  color: #8b6914;
+  letter-spacing: 0.35em;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.poster-title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  color: #1a1008;
+  text-align: center;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  margin-bottom: 6px;
+  text-shadow: 1px 1px 0 rgba(201,151,42,0.2);
+}
+
+.poster-en {
+  font-family: var(--serif);
+  font-size: 10px;
+  color: #c9972a;
+  text-align: center;
+  letter-spacing: 0.4em;
+  margin-bottom: 28px;
+}
+
+/* 区切り線 */
+.poster-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.poster-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c9972a, transparent);
+}
+
+.poster-divider-symbol {
+  font-size: 14px;
+  color: #c9972a;
+}
+
+/* スポット名 */
+.poster-spot {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.poster-spot-label {
+  font-size: 10px;
+  color: #8b6914;
+  letter-spacing: 0.3em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.poster-spot-name {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: #c0392b;
+  letter-spacing: 0.1em;
+}
+
+/* QRコード */
+.poster-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.poster-qr-frame {
+  width: 200px;
+  height: 200px;
+  background: white;
+  border: 3px solid #1a1008;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 4px 4px 0 #c9972a;
+}
+
+/* 四隅の装飾 */
+.poster-qr-frame::before,
+.poster-qr-frame::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #c0392b;
+  border-style: solid;
+}
+
+.poster-qr-frame::before {
+  top: -6px; left: -6px;
+  border-width: 3px 0 0 3px;
+}
+
+.poster-qr-frame::after {
+  bottom: -6px; right: -6px;
+  border-width: 0 3px 3px 0;
+}
+
+#posterQR canvas, #posterQR img {
+  display: block;
+}
+
+.poster-qr-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #8b6914;
+  letter-spacing: 0.2em;
+  font-family: var(--serif);
+}
+
+/* 説明文 */
+.poster-desc-box {
+  background: rgba(26,16,8,0.05);
+  border: 1px solid rgba(26,16,8,0.12);
+  border-left: 3px solid #c0392b;
+  border-radius: 0 6px 6px 0;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.poster-desc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--serif);
+  font-size: 12px;
+  color: #3a2a1a;
+  line-height: 1.7;
+}
+
+.poster-desc-item + .poster-desc-item {
+  margin-top: 4px;
+}
+
+.poster-desc-bullet {
+  color: #c0392b;
+  font-size: 10px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+/* 妖怪装飾 */
+.poster-yokai-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  font-size: 22px;
+  opacity: 0.55;
+}
+
+/* フッター */
+.poster-footer {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid rgba(26,16,8,0.12);
+}
+
+.poster-footer-title {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1008;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.poster-footer-url {
+  font-size: 9px;
+  color: #8b6914;
+  letter-spacing: 0.05em;
+  word-break: break-all;
+}
+
+/* 下部帯 */
+.poster-bottom-bar {
+  background: #1a1008;
+  padding: 8px;
+  text-align: center;
+  font-size: 9px;
+  color: #c9972a;
+  letter-spacing: 0.25em;
+  font-family: var(--serif);
+}
+
+/* ===== 印刷スタイル ===== */
+@media print {
+  body { background: white; padding: 0; }
+  .editor-wrap > *:not(#previewLabel):not(#poster) { display: none !important; }
+  #previewLabel { display: none !important; }
+  #poster {
+    display: block !important;
+    box-shadow: none;
+    border-radius: 0;
+    width: 100%;
+    margin: 0;
+  }
+  .print-btn, .generate-btn { display: none !important; }
+}
+
+@page { margin: 10mm; size: A4 portrait; }
+</style>
+</head>
+<body>
+
+<div class="editor-wrap">
+
+  <div class="editor-header">
+    <h1>🔮 QRポスター生成</h1>
+    <p>URLを入力して印刷用ポスターを生成する</p>
+  </div>
+
+  <div class="editor-card">
+    <label class="field-label">アプリのURL（公開後に入力）</label>
+    <input type="url" id="urlInput" class="field-input"
+      placeholder="https://your-app.netlify.app"
+      value="">
+
+    <label class="field-label">設置スポット名（任意）</label>
+    <div class="spot-grid" id="spotGrid"></div>
+    <input type="text" id="spotInput" class="field-input"
+      placeholder="例：鶴岡八幡宮 参道入口" style="margin-bottom:0">
+  </div>
+
+  <button class="generate-btn" id="generateBtn">✦ ポスターを生成する</button>
+  <button class="print-btn" id="printBtn">🖨 印刷する</button>
+
+  <div class="preview-label" id="previewLabel">▼ プレビュー（印刷後は A4 に合わせて出力されます）</div>
+
+  <!-- ===== POSTER ===== -->
+  <div id="poster">
+    <div class="poster-inner">
+      <div class="poster-top-bar"></div>
+
+      <div class="poster-subtitle">KAMAKURA YOKAI GUARDIAN</div>
+      <div class="poster-title">鎌倉妖怪守護神<br>おみくじ</div>
+      <div class="poster-en">OMIKUJI · FORTUNE · YOKAI</div>
+
+      <div class="poster-divider">
+        <div class="poster-divider-line"></div>
+        <div class="poster-divider-symbol">⛩</div>
+        <div class="poster-divider-line"></div>
+      </div>
+
+      <div class="poster-spot" id="posterSpot" style="display:none">
+        <span class="poster-spot-label">設置スポット</span>
+        <span class="poster-spot-name" id="posterSpotName"></span>
+      </div>
+
+      <div class="poster-qr-wrap">
+        <div class="poster-qr-frame">
+          <div id="posterQR"></div>
+        </div>
+        <div class="poster-qr-hint">📱 スマホのカメラでスキャン</div>
+      </div>
+
+      <div class="poster-desc-box">
+        <div class="poster-desc-item">
+          <span class="poster-desc-bullet">◆</span>
+          <span>現在地の位置情報から、その場所に現れる守護妖怪を占います</span>
+        </div>
+        <div class="poster-desc-item">
+          <span class="poster-desc-bullet">◆</span>
+          <span>総合運・恋愛運・金運・健康運・仕事運を詳しく判定</span>
+        </div>
+        <div class="poster-desc-item">
+          <span class="poster-desc-bullet">◆</span>
+          <span>88体の妖怪・守護神を集めて図鑑を完成させよう</span>
+        </div>
+      </div>
+
+      <div class="poster-yokai-row">
+        <span>🐲</span><span>⛩️</span><span>🦊</span><span>👺</span>
+        <span>🧜‍♀️</span><span>🐍</span><span>👻</span><span>🗿</span>
+      </div>
+
+      <div class="poster-footer">
+        <div class="poster-footer-title">🔮 鎌倉妖怪守護神おみくじ</div>
+        <div class="poster-footer-url" id="posterUrl">（URLを入力してください）</div>
+      </div>
+    </div>
+
+    <div class="poster-bottom-bar">
+      鎌倉・湘南エリア限定 観光おみくじアプリ ── 無料でお楽しみいただけます
+    </div>
+  </div>
+
+</div><!-- /editor-wrap -->
+
+<script>
+// ===== スポット候補 =====
+const SPOTS = [
+  '鶴岡八幡宮', '江島神社', '鎌倉大仏（高徳院）',
+  '建長寺', '長谷寺', '円覚寺',
+  '稲村ヶ崎', '七里ヶ浜', '由比ヶ浜',
+  '小町通り', '龍口寺', '光明寺',
+];
+
+// スポットチップ生成
+const grid = document.getElementById('spotGrid');
+SPOTS.forEach(name => {
+  const chip = document.createElement('div');
+  chip.className = 'spot-chip';
+  chip.textContent = name;
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.spot-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    document.getElementById('spotInput').value = name;
+  });
+  grid.appendChild(chip);
+});
+
+// ===== QR生成 =====
+let qrInstance = null;
+
+document.getElementById('generateBtn').addEventListener('click', generate);
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+// URLなしでも即プレビュー
+generate();
+
+function generate() {
+  const url      = document.getElementById('urlInput').value.trim() || location.href;
+  const spotName = document.getElementById('spotInput').value.trim();
+
+  // QR生成
+  const qrWrap = document.getElementById('posterQR');
+  qrWrap.innerHTML = '';
+  try {
+    new QRCode(qrWrap, {
+      text: url,
+      width:  184,
+      height: 184,
+      colorDark:  '#1a1008',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+  } catch(e) {
+    qrWrap.innerHTML = '<div style="color:#c0392b;font-size:12px;padding:10px;text-align:center">QR生成失敗<br>URLを確認してください</div>';
+  }
+
+  // スポット表示
+  const posterSpot = document.getElementById('posterSpot');
+  const posterSpotName = document.getElementById('posterSpotName');
+  if (spotName) {
+    posterSpotName.textContent = spotName;
+    posterSpot.style.display = 'block';
+  } else {
+    posterSpot.style.display = 'none';
+  }
+
+  // URL表示
+  document.getElementById('posterUrl').textContent = url;
+
+  // ポスター表示
+  document.getElementById('poster').classList.add('show');
+  document.getElementById('previewLabel').classList.add('show');
+  document.getElementById('printBtn').classList.add('show');
+}
+</script>
+</body>
+</html>

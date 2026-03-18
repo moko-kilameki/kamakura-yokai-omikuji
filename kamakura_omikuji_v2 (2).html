@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鎌倉妖怪守護神おみくじ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* =============================================
+   CSS Variables & Reset
+   ============================================= */
+:root {
+  --ink:        #1a1008;
+  --paper:      #f5efe0;
+  --paper-dark: #e8dfc8;
+  --vermilion:  #c0392b;
+  --gold:       #c9972a;
+  --gold-light: #f0c040;
+  --indigo:     #2c3e6b;
+  --mist:       rgba(245,239,224,0.08);
+  --shadow:     rgba(26,16,8,0.35);
+  --rank-ss:    #c9972a;
+  --rank-s:     #7b7bb5;
+  --rank-a:     #2e7d52;
+  --rank-b:     #2c7aaa;
+  --rank-c:     #7a7a7a;
+
+  --serif: 'Noto Serif JP', 'Yu Mincho', serif;
+  --sans:  'Noto Sans JP', 'Hiragino Sans', sans-serif;
+
+  --radius: 12px;
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background-color: #0e0b07;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(44,62,107,0.6) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='1' fill='rgba(245,239,224,0.04)'/%3E%3C/svg%3E");
+  min-height: 100vh;
+  color: var(--paper);
+  padding: 0 0 120px;
+}
+
+/* =============================================
+   Typography
+   ============================================= */
+.serif { font-family: var(--serif); }
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
+
+/* =============================================
+   Header
+   ============================================= */
+.site-header {
+  text-align: center;
+  padding: 40px 20px 30px;
+  position: relative;
+  border-bottom: 1px solid rgba(201,151,42,0.2);
+  background: linear-gradient(180deg, rgba(44,62,107,0.4) 0%, transparent 100%);
+}
+
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--vermilion), var(--gold), transparent);
+}
+
+.site-header h1 {
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  color: var(--gold-light);
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 30px rgba(201,151,42,0.5), 0 2px 4px rgba(0,0,0,0.8);
+  margin-bottom: 8px;
+}
+
+.site-header .subtitle {
+  font-size: 0.85rem;
+  color: rgba(245,239,224,0.55);
+  letter-spacing: 0.2em;
+  font-family: var(--serif);
+}
+
+.header-status {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  transition: var(--transition);
+}
+
+.status-chip.remaining {
+  color: var(--gold-light);
+  background: rgba(201,151,42,0.12);
+  border-color: rgba(201,151,42,0.4);
+}
+
+.status-chip.remaining.warn {
+  color: #e07040;
+  background: rgba(220,100,50,0.12);
+  border-color: rgba(220,100,50,0.4);
+}
+
+.status-chip.remaining.empty {
+  color: #cc4444;
+  background: rgba(200,50,50,0.12);
+  border-color: rgba(200,50,50,0.4);
+}
+
+.status-chip.book-count {
+  color: rgba(245,239,224,0.6);
+  background: rgba(245,239,224,0.05);
+  border-color: rgba(245,239,224,0.15);
+}
+
+/* =============================================
+   Main Layout
+   ============================================= */
+.main-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* =============================================
+   Draw Section
+   ============================================= */
+.draw-section {
+  padding: 40px 0 30px;
+  text-align: center;
+}
+
+.draw-btn-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.draw-btn-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 100px;
+  background: conic-gradient(from 0deg, var(--vermilion), var(--gold), var(--vermilion));
+  opacity: 0;
+  transition: opacity var(--transition);
+  filter: blur(8px);
+}
+
+.draw-btn-wrap:hover::before { opacity: 0.5; }
+
+#drawBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 48px;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--paper);
+  background: linear-gradient(135deg, var(--vermilion) 0%, #8b1a1a 100%);
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(192,57,43,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: var(--transition);
+  z-index: 1;
+}
+
+#drawBtn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(192,57,43,0.65), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+#drawBtn:active:not(:disabled) { transform: translateY(0); }
+
+#drawBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#drawBtn .btn-icon { font-size: 1.3em; }
+
+.draw-hint {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: rgba(245,239,224,0.35);
+  letter-spacing: 0.1em;
+}
+
+/* =============================================
+   Result Card
+   ============================================= */
+#resultArea { display: none; }
+#resultArea.show { display: block; animation: fadeSlideUp 0.6s var(--transition) both; }
+
+@keyframes fadeSlideUp {
+  from { opacity:0; transform: translateY(30px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.result-card {
+  background: linear-gradient(160deg, rgba(245,239,224,0.06) 0%, rgba(44,62,107,0.12) 100%);
+  border: 1px solid rgba(201,151,42,0.3);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.result-rank-badge {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 100px;
+  font-family: var(--serif);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+}
+
+.rank-SS { background: rgba(201,151,42,0.2); color: var(--gold-light); border: 1px solid var(--gold); }
+.rank-S  { background: rgba(123,123,181,0.2); color: #a0a0e8; border: 1px solid #7b7bb5; }
+.rank-A  { background: rgba(46,125,82,0.2); color: #60c080; border: 1px solid #2e7d52; }
+.rank-B  { background: rgba(44,122,170,0.2); color: #60aadd; border: 1px solid #2c7aaa; }
+.rank-C  { background: rgba(122,122,122,0.2); color: #aaaaaa; border: 1px solid #7a7a7a; }
+
+.result-emoji { font-size: 4.5rem; margin: 8px 0 16px; display: block; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6)); }
+
+.result-name {
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  color: var(--gold-light);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.result-desc {
+  font-size: 0.85rem;
+  color: rgba(245,239,224,0.55);
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+
+.result-fortune {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--paper);
+  line-height: 1.8;
+  padding: 16px 20px;
+  background: rgba(245,239,224,0.04);
+  border-left: 3px solid var(--vermilion);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  text-align: left;
+}
+
+.result-location {
+  margin-top: 16px;
+  font-size: 0.78rem;
+  color: rgba(245,239,224,0.4);
+  letter-spacing: 0.1em;
+}
+
+.result-new-badge {
+  display: inline-block;
+  background: var(--vermilion);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 100px;
+  margin-left: 8px;
+  letter-spacing: 0.1em;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.result-image {
+  width: 100%;
+  max-width: 280px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  border: 1px solid rgba(201,151,42,0.3);
+}
+
+/* QR */
+.qr-section {
+  margin-top: 24px;
+  padding: 20px;
+  background: rgba(245,239,224,0.03);
+  border: 1px solid rgba(245,239,224,0.1);
+  border-radius: var(--radius);
+}
+
+.qr-title {
+  font-size: 0.82rem;
+  color: rgba(245,239,224,0.5);
+  margin-bottom: 12px;
+  letter-spacing: 0.15em;
+}
+
+#qrcode { display: flex; justify-content: center; }
+#qrcode canvas, #qrcode img {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  padding: 8px;
+  background: white;
+}
+
+/* =============================================
+   Fortune Detail (①②③)
+   ============================================= */
+
+/* 総合運バナー */
+.fortune-overall {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  padding: 14px 20px;
+  background: rgba(201,151,42,0.08);
+  border-left: 4px solid var(--gold);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 16px 0;
+  text-align: left;
+  letter-spacing: 0.05em;
+}
+
+/* 運勢スターグリッド */
+.fortune-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.fortune-stat-item {
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(245,239,224,0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.fortune-stat-label {
+  font-size: 0.72rem;
+  color: rgba(245,239,224,0.45);
+  letter-spacing: 0.15em;
+  display: block;
+  margin-bottom: 5px;
+  font-family: var(--serif);
+}
+
+.fortune-stat-text {
+  font-size: 0.82rem;
+  color: rgba(245,239,224,0.75);
+  line-height: 1.5;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.fortune-stars {
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+}
+
+.star-filled { color: var(--gold-light); }
+.star-empty  { color: rgba(245,239,224,0.15); }
+
+/* ラッキー3点セット */
+.fortune-lucky {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.lucky-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  background: rgba(44,62,107,0.3);
+  border: 1px solid rgba(44,62,107,0.5);
+  border-radius: 100px;
+  font-size: 0.78rem;
+  color: rgba(160,185,245,0.9);
+  letter-spacing: 0.05em;
+}
+
+.lucky-chip .lucky-icon { font-size: 0.95em; }
+
+/* ② おすすめスポットカード */
+.boost-spot-card {
+  margin-top: 18px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(192,57,43,0.08), rgba(201,151,42,0.06));
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.boost-spot-card:hover {
+  border-color: rgba(201,151,42,0.5);
+  background: linear-gradient(135deg, rgba(192,57,43,0.12), rgba(201,151,42,0.1));
+  transform: translateY(-2px);
+}
+
+.boost-spot-pin { font-size: 1.6rem; flex-shrink: 0; margin-top: 2px; }
+
+.boost-spot-body { flex: 1; }
+
+.boost-spot-type {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--vermilion);
+  background: rgba(192,57,43,0.12);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 100px;
+  padding: 2px 10px;
+  margin-bottom: 5px;
+}
+
+.boost-spot-name {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--gold-light);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.boost-spot-msg {
+  font-size: 0.8rem;
+  color: rgba(245,239,224,0.5);
+  line-height: 1.5;
+}
+
+.boost-spot-hint {
+  font-size: 0.7rem;
+  color: rgba(201,151,42,0.6);
+  margin-top: 6px;
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+/* ⑧ UXアクションバー */
+.action-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 11px 10px;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--serif);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.action-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+.action-btn-spot  { background: linear-gradient(135deg,#c0392b,#8b1a1a); color: #ffc8c0; box-shadow: 0 4px 14px rgba(192,57,43,0.35); }
+.action-btn-share { background: linear-gradient(135deg,#2c5fa5,#1a3d7a); color: #b0c8f8; box-shadow: 0 4px 14px rgba(44,95,165,0.35); }
+.action-btn-x     { background: linear-gradient(135deg,#1a1a1a,#111);     color: #ccc;    border: 1px solid #333; }
+
+/* Cooldown / Error messages */
+.msg-box {
+  padding: 28px 24px;
+  border-radius: var(--radius);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.msg-box.cooldown {
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.3);
+}
+
+.msg-box.error {
+  background: rgba(200,50,50,0.1);
+  border: 1px solid rgba(200,50,50,0.3);
+}
+
+.msg-box .msg-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+.msg-box .msg-title { font-family: var(--serif); font-size: 1.1rem; color: var(--gold-light); margin-bottom: 6px; }
+.msg-box .msg-sub { font-size: 0.82rem; color: rgba(245,239,224,0.5); }
+
+/* =============================================
+   Section Headers
+   ============================================= */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0 20px;
+}
+
+.section-header h2 {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  color: var(--gold-light);
+  letter-spacing: 0.15em;
+}
+
+.section-header .section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201,151,42,0.4), transparent);
+}
+
+/* =============================================
+   Book Progress
+   ============================================= */
+.book-progress {
+  padding: 16px 20px;
+  background: rgba(245,239,224,0.03);
+  border: 1px solid rgba(201,151,42,0.2);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.book-progress .progress-text {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  color: rgba(245,239,224,0.6);
+  white-space: nowrap;
+}
+
+.book-progress .progress-count {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  font-family: var(--serif);
+}
+
+.book-progress .progress-bar-wrap {
+  flex: 1;
+  min-width: 120px;
+}
+
+.progress-bar-bg {
+  height: 6px;
+  background: rgba(245,239,224,0.08);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--vermilion), var(--gold));
+  border-radius: 100px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.progress-pct {
+  font-size: 0.75rem;
+  color: rgba(245,239,224,0.4);
+  margin-top: 4px;
+}
+
+/* =============================================
+   Book Grid
+   ============================================= */
+#bookGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.book-card {
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(245,239,224,0.1);
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  transition: var(--transition);
+  cursor: default;
+}
+
+.book-card.found {
+  border-color: rgba(201,151,42,0.35);
+  background: rgba(201,151,42,0.06);
+  cursor: pointer;
+}
+
+.book-card.found:hover {
+  transform: translateY(-4px);
+  border-color: rgba(201,151,42,0.6);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.book-card .card-emoji { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+.book-card.locked .card-emoji { filter: grayscale(1); opacity: 0.2; }
+.book-card .card-name { font-size: 0.65rem; color: rgba(245,239,224,0.7); line-height: 1.3; font-family: var(--serif); }
+.book-card.locked .card-name { color: rgba(245,239,224,0.2); }
+
+.book-card .card-rank-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 5px;
+}
+
+.book-card .card-found-date {
+  font-size: 0.6rem;
+  color: rgba(245,239,224,0.3);
+  margin-top: 3px;
+  display: block;
+}
+
+/* =============================================
+   Map
+   ============================================= */
+#map {
+  width: 100%;
+  height: 340px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(201,151,42,0.2);
+  margin-bottom: 40px;
+}
+
+/* =============================================
+   Dev Controls
+   ============================================= */
+.dev-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: var(--radius);
+}
+
+.dev-btn {
+  padding: 8px 18px;
+  font-size: 0.78rem;
+  font-family: var(--sans);
+  font-weight: 700;
+  background: rgba(255,255,255,0.07);
+  color: rgba(245,239,224,0.5);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dev-btn:hover { background: rgba(255,255,255,0.12); color: var(--paper); }
+.dev-label { font-size: 0.7rem; color: rgba(245,239,224,0.2); align-self: center; letter-spacing: 0.15em; }
+
+/* =============================================
+   Admin Panel (fixed button + overlay)
+   ============================================= */
+.admin-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(14,11,7,0.9);
+  border: 1px solid rgba(201,151,42,0.5);
+  color: var(--gold-light);
+  border-radius: 100px;
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-decoration: none;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  transition: var(--transition);
+}
+
+.admin-fab:hover {
+  background: rgba(201,151,42,0.15);
+  border-color: var(--gold);
+  box-shadow: 0 6px 28px rgba(201,151,42,0.25);
+  transform: translateY(-2px);
+}
+
+/* Admin Overlay */
+.admin-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8,6,4,0.95);
+  backdrop-filter: blur(16px);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 20px 16px 40px;
+}
+
+.admin-overlay.show { display: block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* Lock Screen */
+.lock-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8,6,4,0.97);
+  backdrop-filter: blur(20px);
+  z-index: 1100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.lock-screen.show { display: flex; animation: fadeIn 0.3s ease; }
+
+.lock-box {
+  background: linear-gradient(160deg, #171109, #0e1522);
+  border: 1px solid rgba(201,151,42,0.35);
+  border-radius: 20px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8), 0 0 40px rgba(201,151,42,0.08);
+}
+
+.lock-icon {
+  font-size: 2.8rem;
+  display: block;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 12px rgba(201,151,42,0.4));
+}
+
+.lock-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--gold-light);
+  letter-spacing: 0.2em;
+  margin-bottom: 6px;
+}
+
+.lock-sub {
+  font-size: 0.78rem;
+  color: rgba(245,239,224,0.3);
+  letter-spacing: 0.1em;
+  margin-bottom: 28px;
+}
+
+.lock-input-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.lock-input {
+  width: 100%;
+  padding: 14px 48px 14px 18px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(201,151,42,0.3);
+  border-radius: 100px;
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  transition: border-color var(--transition);
+  outline: none;
+}
+
+.lock-input:focus { border-color: rgba(201,151,42,0.7); }
+.lock-input.error { border-color: rgba(192,57,43,0.7); animation: shake 0.4s ease; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
+
+.lock-toggle-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(245,239,224,0.35);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  transition: color var(--transition);
+  line-height: 1;
+}
+
+.lock-toggle-btn:hover { color: var(--gold-light); }
+
+.lock-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold) 0%, #8b6914 100%);
+  border: none;
+  border-radius: 100px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 16px rgba(201,151,42,0.3);
+}
+
+.lock-submit-btn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(201,151,42,0.45);
+}
+
+.lock-error-msg {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: #e05050;
+  min-height: 1.2em;
+  letter-spacing: 0.05em;
+}
+
+.lock-cancel-btn {
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: rgba(245,239,224,0.25);
+  font-size: 0.78rem;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: color var(--transition);
+  padding: 6px;
+}
+
+.lock-cancel-btn:hover { color: rgba(245,239,224,0.55); }
+
+.admin-wrap { max-width: 1200px; margin: 0 auto; }
+
+.admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0 24px;
+  border-bottom: 1px solid rgba(201,151,42,0.2);
+  margin-bottom: 28px;
+}
+
+.admin-topbar h2 {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  color: var(--gold-light);
+  letter-spacing: 0.15em;
+}
+
+.admin-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Admin Stats */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(245,239,224,0.08);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-card .stat-val {
+  font-family: var(--serif);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  display: block;
+}
+
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  color: rgba(245,239,224,0.4);
+  margin-top: 4px;
+  letter-spacing: 0.1em;
+}
+
+/* Popular ranking */
+.popular-list { margin-bottom: 28px; }
+
+.popular-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(245,239,224,0.03);
+  border: 1px solid rgba(245,239,224,0.07);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.popular-item .pop-rank {
+  font-family: var(--serif);
+  font-size: 0.75rem;
+  color: rgba(245,239,224,0.3);
+  min-width: 24px;
+  text-align: right;
+}
+
+.popular-item .pop-emoji { font-size: 1.3em; }
+
+.popular-item .pop-name { flex: 1; color: var(--paper); }
+
+.popular-item .pop-count {
+  font-family: var(--serif);
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+/* Admin Yokai Grid */
+.admin-yokai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.admin-card {
+  background: rgba(245,239,224,0.04);
+  border: 1px solid rgba(245,239,224,0.1);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: var(--transition);
+}
+
+.admin-card:hover {
+  border-color: rgba(201,151,42,0.4);
+  transform: translateY(-3px);
+}
+
+.admin-card-preview {
+  width: 100%;
+  height: 110px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(245,239,224,0.06);
+}
+
+.admin-card-preview img { width:100%; height:100%; object-fit:cover; }
+
+.admin-card-name { font-family: var(--serif); font-size: 1rem; color: var(--gold-light); margin-bottom: 4px; font-weight: 700; }
+.admin-card-meta { font-size: 0.78rem; color: rgba(245,239,224,0.45); margin-bottom: 12px; line-height: 1.6; }
+.admin-card-actions { display: flex; gap: 8px; }
+
+/* Admin Buttons */
+.abtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 100px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.05em;
+}
+
+.abtn:hover { transform: translateY(-1px); filter: brightness(1.15); }
+
+.abtn-primary { background: linear-gradient(135deg, #2c5fa5, #1a3d7a); color: #b0c8f8; }
+.abtn-success { background: linear-gradient(135deg, #2e7d52, #1a5232); color: #80e0a0; }
+.abtn-danger  { background: linear-gradient(135deg, #8b1a1a, #5a0a0a); color: #f08080; }
+.abtn-gold    { background: linear-gradient(135deg, var(--gold), #8b6914); color: var(--ink); }
+.abtn-ghost   { background: rgba(245,239,224,0.06); color: rgba(245,239,224,0.5); border: 1px solid rgba(245,239,224,0.1); }
+
+/* Admin Modal */
+.admin-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 2000;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.admin-modal.show { display: flex; animation: fadeIn 0.25s ease; }
+
+.admin-modal-box {
+  background: linear-gradient(160deg, #171109, #0e1522);
+  border: 1px solid rgba(201,151,42,0.35);
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 560px;
+  width: 100%;
+  margin: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-modal-title { font-family: var(--serif); font-size: 1.2rem; color: var(--gold-light); }
+
+.close-x {
+  background: none;
+  border: none;
+  color: rgba(245,239,224,0.4);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.close-x:hover { color: var(--paper); }
+
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(201,151,42,0.8);
+  margin-bottom: 5px;
+  letter-spacing: 0.1em;
+  font-family: var(--serif);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(245,239,224,0.15);
+  border-radius: 8px;
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  transition: border-color var(--transition);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: rgba(201,151,42,0.5);
+}
+
+.form-group textarea { min-height: 64px; resize: vertical; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.image-drop {
+  border: 2px dashed rgba(201,151,42,0.25);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: rgba(0,0,0,0.2);
+}
+
+.image-drop:hover, .image-drop.over {
+  border-color: rgba(201,151,42,0.55);
+  background: rgba(201,151,42,0.04);
+}
+
+.image-drop .drop-icon { font-size: 2rem; display: block; margin-bottom: 6px; opacity: 0.4; }
+.image-drop .drop-hint { font-size: 0.75rem; color: rgba(245,239,224,0.35); }
+
+.image-drop-preview {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 12px;
+  display: none;
+}
+
+/* Toast notification */
+.toast-wrap {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 12px 20px;
+  background: rgba(20,15,8,0.96);
+  border: 1px solid rgba(201,151,42,0.4);
+  border-radius: 100px;
+  font-size: 0.82rem;
+  color: var(--gold-light);
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: toastIn 0.35s ease;
+  pointer-events: auto;
+}
+
+@keyframes toastIn  { from { transform: translateX(60px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+@keyframes toastOut { from { transform: translateX(0); opacity:1; } to { transform: translateX(60px); opacity:0; } }
+
+/* =============================================
+   Shared Result (URL param)
+   ============================================= */
+.shared-banner {
+  padding: 10px 16px;
+  background: rgba(44,62,107,0.25);
+  border: 1px solid rgba(44,62,107,0.5);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  color: rgba(160,160,232,0.8);
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+/* =============================================
+   Responsive
+   ============================================= */
+@media (max-width: 520px) {
+  .admin-yokai-grid { grid-template-columns: 1fr 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  #bookGrid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- =============================================
+     HEADER
+     ============================================= -->
+<header class="site-header">
+  <div class="header-content">
+    <h1 class="serif">🔮 鎌倉妖怪守護神おみくじ</h1>
+    <p class="subtitle">現在地で出会える守護神を占う</p>
+    <div class="header-status">
+      <span class="status-chip remaining" id="chipRemaining">本日残り — 回</span>
+      <span class="status-chip book-count" id="chipBook">図鑑 — / 88</span>
+    </div>
+  </div>
+</header>
+
+<!-- =============================================
+     MAIN CONTENT
+     ============================================= -->
+<div class="main-wrap">
+
+  <!-- Draw -->
+  <section class="draw-section">
+    <div class="draw-btn-wrap">
+      <button id="drawBtn">
+        <span class="btn-icon">御</span>おみくじを引く
+      </button>
+    </div>
+    <p class="draw-hint" id="drawHint">現在地の守護神があなたを導く</p>
+  </section>
+
+  <!-- Result -->
+  <div id="resultArea"></div>
+
+  <!-- Book Progress -->
+  <div class="section-header">
+    <h2>妖怪図鑑</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="book-progress" id="bookProgress">
+    <div>
+      <span class="progress-count" id="bookFound">0</span>
+      <span class="progress-text"> / 88 体発見</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+      </div>
+      <div class="progress-pct" id="progressPct">達成率 0%</div>
+    </div>
+  </div>
+
+  <div id="bookGrid"></div>
+
+  <!-- Map -->
+  <div class="section-header">
+    <h2>妖怪スポットマップ</h2>
+    <div class="section-line"></div>
+  </div>
+  <div id="map"></div>
+
+</div><!-- /main-wrap -->
+
+<!-- Admin FAB -->
+<a href="#" class="admin-fab" id="adminFab">⚙ 管理画面</a>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- =============================================
+     LOCK SCREEN
+     ============================================= -->
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-box">
+    <span class="lock-icon">🔐</span>
+    <div class="lock-title">管理画面</div>
+    <div class="lock-sub">パスワードを入力してください</div>
+    <div class="lock-input-wrap">
+      <input
+        type="password"
+        id="lockInput"
+        class="lock-input"
+        placeholder="••••••"
+        maxlength="32"
+        autocomplete="current-password"
+      >
+      <button class="lock-toggle-btn" id="lockToggle" title="表示切替">👁</button>
+    </div>
+    <button class="lock-submit-btn" id="lockSubmit">解錠する</button>
+    <div class="lock-error-msg" id="lockError"></div>
+    <button class="lock-cancel-btn" id="lockCancel">キャンセル</button>
+  </div>
+</div>
+
+<!-- =============================================
+     ADMIN OVERLAY
+     ============================================= -->
+<div id="adminOverlay" class="admin-overlay">
+  <div class="admin-wrap">
+
+    <div class="admin-topbar">
+      <h2>🔮 妖怪管理画面</h2>
+      <div class="admin-actions">
+        <button class="abtn abtn-gold" id="adminAddBtn">➕ 妖怪を追加</button>
+        <button class="abtn abtn-ghost" id="adminCloseBtn">✕ 閉じる</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="admin-stats" id="adminStats"></div>
+
+    <!-- Dev Tools -->
+    <div class="section-header" style="padding-top:0">
+      <h2 style="font-size:1rem;">🛠 開発ツール</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="dev-controls" style="margin-bottom:28px;">
+      <span class="dev-label">DEV</span>
+      <button class="dev-btn" id="devReset">⏱ 制限リセット</button>
+      <button class="dev-btn" id="devClearBook">📖 図鑑クリア</button>
+      <button class="dev-btn" id="devClearStats">📊 統計クリア</button>
+    </div>
+
+    <!-- Popular -->
+    <div class="section-header" style="padding-top:0">
+      <h2 style="font-size:1rem;">人気妖怪ランキング</h2>
+      <div class="section-line"></div>
+    </div>
+    <div id="popularList" class="popular-list"></div>
+
+    <!-- Yokai list -->
+    <div class="section-header" style="padding-top:0">
+      <h2 style="font-size:1rem;">登録妖怪一覧</h2>
+      <div class="section-line"></div>
+    </div>
+    <div id="adminYokaiGrid" class="admin-yokai-grid"></div>
+
+  </div>
+</div>
+
+<!-- Admin Edit Modal -->
+<div id="adminModal" class="admin-modal">
+  <div class="admin-modal-box">
+    <div class="admin-modal-header">
+      <span class="admin-modal-title" id="modalTitle">妖怪を編集</span>
+      <button class="close-x" id="modalCloseBtn">✕</button>
+    </div>
+
+    <input type="hidden" id="fId">
+
+    <div class="form-group">
+      <label>画像</label>
+      <div class="image-drop" id="imageDrop">
+        <span class="drop-icon">📸</span>
+        <span class="drop-hint">クリックまたはドラッグ&amp;ドロップ（5MB以下）</span>
+        <img id="imagePreview" class="image-drop-preview">
+        <input type="file" id="imageInput" accept="image/*" style="display:none">
+      </div>
+      <input type="hidden" id="fImage">
+      <div id="imageActions" style="display:none;gap:8px;margin-top:8px;display:none">
+        <button type="button" class="abtn abtn-ghost" onclick="Admin.changeImage()">🔄 変更</button>
+        <button type="button" class="abtn abtn-danger" onclick="Admin.removeImage()">🗑 削除</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>妖怪名 *</label>
+        <input type="text" id="fName" placeholder="江ノ島龍神">
+      </div>
+      <div class="form-group">
+        <label>絵文字</label>
+        <input type="text" id="fEmoji" placeholder="🐲">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>ランク</label>
+        <select id="fRank">
+          <option value="SS">SS（最高）</option>
+          <option value="S">S</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>出現場所</label>
+        <select id="fLocation">
+          <option value="spot_enoshima">江ノ島</option>
+          <option value="spot_hachimangu">鶴岡八幡宮</option>
+          <option value="spot_daibutsu">鎌倉大仏</option>
+          <option value="spot_kenchoji">建長寺</option>
+          <option value="spot_hasedera">長谷寺</option>
+          <option value="spot_inamura">稲村ヶ崎</option>
+          <option value="spot_shichiri">七里ヶ浜</option>
+          <option value="spot_ryuko">龍口寺</option>
+          <option value="spot_katase">片瀬</option>
+          <option value="spot_zaimokuza">材木座</option>
+          <option value="spot_yuigahama">由比ヶ浜</option>
+          <option value="spot_koshigoe">腰越</option>
+          <option value="spot_ofuna">大船</option>
+          <option value="spot_engakuji">円覚寺</option>
+          <option value="spot_jufukuji">寿福寺</option>
+          <option value="spot_komyoji">光明寺</option>
+          <option value="spot_kamakurayama">鎌倉山</option>
+          <option value="spot_kamakura">鎌倉エリア</option>
+          <option value="spot_shonan_sea">湘南の海</option>
+          <option value="spot_river">川辺</option>
+          <option value="spot_forest">鎌倉の森</option>
+          <option value="spot_temple">寺院</option>
+          <option value="spot_beach">浜辺</option>
+          <option value="spot_house">民家</option>
+          <option value="spot_shonan">湘南</option>
+          <option value="kamakura">鎌倉全体</option>
+          <option value="global">全国</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>説明</label>
+      <textarea id="fDesc" placeholder="妖怪の説明文"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>占い結果</label>
+      <textarea id="fFortune" placeholder="おみくじの文言"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>緯度（lat）</label>
+        <input type="number" step="0.0001" id="fLat" placeholder="35.2993">
+      </div>
+      <div class="form-group">
+        <label>経度（lng）</label>
+        <input type="number" step="0.0001" id="fLng" placeholder="139.4801">
+      </div>
+    </div>
+
+    <button type="button" class="abtn abtn-gold" onclick="Admin.save()" style="width:100%;padding:14px;margin-top:4px;font-size:0.95rem;">💾 保存</button>
+  </div>
+</div>
+
+<!-- =============================================
+     SCRIPTS
+     ============================================= -->
+<script>
+'use strict';
+
+// =============================================
+// ① Storage Layer  (安全ラッパー)
+// =============================================
+const Storage = {
+  get(key, defaultValue = null) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : defaultValue;
+    } catch(e) {
+      console.error('[Storage.get]', key, e);
+      return defaultValue;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch(e) {
+      console.error('[Storage.set]', key, e);
+    }
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); } catch(e) {}
+  }
+};
+
+// =============================================
+// ② GPS Module  (Haversine距離判定)
+// =============================================
+const GPS = {
+  /**
+   * 現在地を取得する（5秒タイムアウト）
+   * @returns {Promise<{latitude:number, longitude:number}>}
+   */
+  getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) { reject(new Error('GPS_UNSUPPORTED')); return; }
+      const timer = setTimeout(() => reject(new Error('GPS_TIMEOUT')), 5000);
+      navigator.geolocation.getCurrentPosition(
+        pos => { clearTimeout(timer); resolve(pos.coords); },
+        err => { clearTimeout(timer); reject(err); }
+      );
+    });
+  },
+
+  /**
+   * Haversine公式による2点間の距離（メートル）
+   */
+  distance(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const toR = d => d * Math.PI / 180;
+    const dLat = toR(lat2 - lat1);
+    const dLng = toR(lng2 - lng1);
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(toR(lat1)) * Math.cos(toR(lat2)) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  },
+
+  /**
+   * スポット判定（500m以内）
+   */
+  detectSpot(lat, lng) {
+    const RADIUS = 500;
+    for (const s of SPOTS) {
+      if (this.distance(lat, lng, s.lat, s.lng) <= RADIUS) return s.id;
+    }
+    // 鎌倉・湘南広域判定（3km四方）
+    if (lat > 35.28 && lat < 35.36 && lng > 139.46 && lng < 139.57) return 'spot_kamakura';
+    if (lat > 35.28 && lat < 35.33 && lng > 139.46 && lng < 139.52) return 'spot_shonan_sea';
+    return 'kamakura';
+  }
+};
+
+// =============================================
+// スポット定義
+// =============================================
+const SPOTS = [
+  { id:'spot_enoshima',    name:'江ノ島',       lat:35.2993, lng:139.4801 },
+  { id:'spot_hachimangu',  name:'鶴岡八幡宮',   lat:35.3258, lng:139.5562 },
+  { id:'spot_daibutsu',    name:'鎌倉大仏',     lat:35.3167, lng:139.5356 },
+  { id:'spot_kenchoji',    name:'建長寺',        lat:35.3323, lng:139.5533 },
+  { id:'spot_hasedera',    name:'長谷寺',        lat:35.3168, lng:139.5327 },
+  { id:'spot_inamura',     name:'稲村ヶ崎',     lat:35.3030, lng:139.5260 },
+  { id:'spot_shichiri',    name:'七里ヶ浜',     lat:35.3050, lng:139.5150 },
+  { id:'spot_ryuko',       name:'龍口寺',        lat:35.3058, lng:139.4835 },
+  { id:'spot_katase',      name:'片瀬',          lat:35.3070, lng:139.4870 },
+  { id:'spot_zaimokuza',   name:'材木座',        lat:35.3120, lng:139.5600 },
+  { id:'spot_yuigahama',   name:'由比ヶ浜',     lat:35.3150, lng:139.5490 },
+  { id:'spot_koshigoe',    name:'腰越',          lat:35.3062, lng:139.5000 },
+  { id:'spot_ofuna',       name:'大船',          lat:35.3433, lng:139.5298 },
+  { id:'spot_engakuji',    name:'円覚寺',        lat:35.3370, lng:139.5480 },
+  { id:'spot_jufukuji',    name:'寿福寺',        lat:35.3220, lng:139.5490 },
+  { id:'spot_komyoji',     name:'光明寺',        lat:35.3130, lng:139.5610 },
+  { id:'spot_kamakurayama',name:'鎌倉山',        lat:35.3280, lng:139.5220 },
+];
+
+// =============================================
+// ③ Omikuji Module  (確率テーブル＋ロジック)
+// =============================================
+const Omikuji = {
+  /**
+   * ⑦ 出現確率テーブル
+   * SS: 1%  S: 5%  A: 20%  B: 30%  C: 44%
+   */
+  RANK_WEIGHTS: { SS:1, S:5, A:20, B:30, C:44 },
+
+  draw(yokaiList, spotId) {
+    if (!yokaiList || yokaiList.length === 0) return null;
+
+    // 確率テーブルからランクを決定
+    const targetRank = this._rollRank();
+
+    // 対象スポット内の、決定ランクの妖怪プールを組む
+    let pool = yokaiList.filter(y =>
+      (y.location === spotId || y.location === 'global') && y.rank === targetRank
+    );
+
+    // ランクが一致しない場合は同スポット全体から
+    if (pool.length === 0) {
+      pool = yokaiList.filter(y => y.location === spotId || y.location === 'global');
+    }
+
+    // それでも空なら全体から
+    if (pool.length === 0) pool = yokaiList;
+
+    return pool[Math.floor(Math.random() * pool.length)];
+  },
+
+  _rollRank() {
+    const total = Object.values(this.RANK_WEIGHTS).reduce((a,b) => a+b, 0);
+    let r = Math.random() * total;
+    for (const [rank, w] of Object.entries(this.RANK_WEIGHTS)) {
+      r -= w;
+      if (r <= 0) return rank;
+    }
+    return 'C';
+  }
+};
+
+// =============================================
+// ④ Daily Limit  (1日1回制限)
+// =============================================
+const MAX_DRAWS = 10; // ← 公開時は 1 に変更
+
+const DailyLimit = {
+  KEY: 'omikuji_daily',
+
+  _today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  },
+
+  _load() {
+    const saved = Storage.get(this.KEY, { date: '', count: 0 });
+    if (saved.date !== this._today()) return { date: this._today(), count: 0 };
+    return saved;
+  },
+
+  getRemaining() {
+    return Math.max(0, MAX_DRAWS - this._load().count);
+  },
+
+  canDraw() {
+    return this._load().count < MAX_DRAWS;
+  },
+
+  consume() {
+    const d = this._load();
+    d.count += 1;
+    Storage.set(this.KEY, d);
+  },
+
+  reset() {
+    Storage.set(this.KEY, { date: this._today(), count: 0 });
+  }
+};
+
+// =============================================
+// ⑤ Book Module  (発見日時 + 達成率)
+// =============================================
+const Book = {
+  KEY: 'omikuji_book',
+
+  _load() { return Storage.get(this.KEY, {}); },
+  _save(b) { Storage.set(this.KEY, b); },
+
+  add(id) {
+    const b = this._load();
+    if (!b[id]) {
+      b[id] = { date: new Date().toLocaleDateString('ja-JP') };
+      this._save(b);
+      return true; // 新発見
+    }
+    return false;
+  },
+
+  has(id) { return !!this._load()[id]; },
+
+  getAll() { return this._load(); },
+
+  count() { return Object.keys(this._load()).length; },
+
+  clear() { Storage.remove(this.KEY); }
+};
+
+// =============================================
+// ⑥ Stats Module  (統計)
+// =============================================
+const Stats = {
+  KEY: 'omikuji_stats',
+
+  _load() { return Storage.get(this.KEY, { total: 0, draws: {}, daily: {} }); },
+  _save(s) { Storage.set(this.KEY, s); },
+
+  record(yokaiId) {
+    const s = this._load();
+    s.total = (s.total || 0) + 1;
+    s.draws[yokaiId] = (s.draws[yokaiId] || 0) + 1;
+    const today = new Date().toLocaleDateString('ja-JP');
+    s.daily[today] = (s.daily[today] || 0) + 1;
+    this._save(s);
+  },
+
+  getTop(n = 5) {
+    const s = this._load();
+    return Object.entries(s.draws || {})
+      .sort((a,b) => b[1]-a[1])
+      .slice(0, n)
+      .map(([id, count]) => ({ id: Number(id), count }));
+  },
+
+  getTotal() { return this._load().total || 0; },
+
+  getDaily() { return this._load().daily || {}; },
+
+  clear() { Storage.remove(this.KEY); }
+};
+
+// =============================================
+// Yokai Data (88体)
+// =============================================
+const DEFAULT_YOKAI = [
+  // ===== SS RANK =====
+  {id:1, name:"江ノ島龍神", rank:"SS", location:"spot_enoshima", emoji:"🐲",
+   description:"江ノ島の洞窟に棲むといわれる海の龍神。湘南の海を守護する存在。",
+   fortune:{ overall:"大吉。人生の大きな転機が訪れる。龍神の加護を受け、迷わず前進せよ。", love:"運命的な出会いが待っている。積極的に行動すべし。", money:"大きな収入のチャンス。投資や挑戦に吉。", health:"非常に良好。エネルギーに満ち溢れる。", work:"成功の波に乗る時。リーダーシップを発揮せよ。" },
+   stats:{ love:5, money:5, health:4, work:5 },
+   lucky:{ action:"海辺を裸足で歩く", item:"青いアクセサリー", color:"青" },
+   boostSpot:{ name:"江島神社 奥津宮", type:"龍神加護スポット", lat:35.2993, lng:139.4801, message:"龍神に直接祈願できる最強の地。ここで願うと全運気が上昇する。" },
+   lat:35.2993, lng:139.4801, image:null},
+
+  {id:2, name:"八幡大神", rank:"SS", location:"spot_hachimangu", emoji:"⛩️",
+   description:"武士の守護神。鎌倉武士たちが戦の前に祈った神。",
+   fortune:{ overall:"大吉。勝負運最高潮。挑戦するすべてに勝利の道が開ける。", love:"決断が恋愛を前進させる。告白・プロポーズに最適。", money:"勝負をかけた投資が実る。大きな賭けに出る好機。", health:"気力体力ともに充実。スポーツに打ち込むと吉。", work:"昇進・独立に最高の時。恐れずに挑め。" },
+   stats:{ love:4, money:5, health:5, work:5 },
+   lucky:{ action:"勝負事に挑む", item:"赤いお守り", color:"赤" },
+   boostSpot:{ name:"鶴岡八幡宮 本宮", type:"勝運アップ", lat:35.3258, lng:139.5562, message:"八幡大神に勝利を誓う地。仕事・勝負事の祈願に絶大な効果。" },
+   lat:35.3258, lng:139.5562, image:null},
+
+  {id:3, name:"鎌倉大仏守護霊", rank:"SS", location:"spot_daibutsu", emoji:"🗿",
+   description:"鎌倉大仏に宿る慈悲の霊。静かに人々を見守る。",
+   fortune:{ overall:"吉。焦らず進めば道は必ず開ける。慈悲の光があなたを包む。", love:"焦らず待つ姿勢が縁を引き寄せる。ゆっくり距離を縮めよ。", money:"堅実な積み立てが実を結ぶ。急ぎすぎに注意。", health:"心の平和が体を癒す。瞑想・ヨガが吉。", work:"着実な努力が評価される。急がず丁寧に。" },
+   stats:{ love:3, money:3, health:5, work:4 },
+   lucky:{ action:"静かな場所で瞑想する", item:"白い布", color:"白" },
+   boostSpot:{ name:"高徳院（鎌倉大仏）", type:"心願成就スポット", lat:35.3167, lng:139.5356, message:"大仏の前で心を静め願うと、迷いが晴れて道が開ける。" },
+   lat:35.3167, lng:139.5356, image:null},
+
+  {id:4, name:"江島弁財天", rank:"SS", location:"spot_enoshima", emoji:"🎵",
+   description:"江島神社の女神。芸術と財運の守護神。",
+   fortune:{ overall:"大吉。才能が花開く。芸術・財運のどちらも最高潮。", love:"美しさが輝く時期。異性を惹きつける魅力が増大する。", money:"芸術・クリエイティブな仕事で大きな収入が見込める。", health:"美容運も上昇。自分を大切にする行動が吉。", work:"創造的な仕事で才能を発揮。芸術系の挑戦に最適。" },
+   stats:{ love:5, money:4, health:3, work:5 },
+   lucky:{ action:"音楽を演奏・鑑賞する", item:"白蛇モチーフのもの", color:"金" },
+   boostSpot:{ name:"江島神社 中津宮", type:"芸術・財運アップ", lat:35.2993, lng:139.4810, message:"弁財天の加護が直接届く場所。芸術の才と財運を授かれる。" },
+   lat:35.2993, lng:139.4801, image:null},
+
+  {id:5, name:"建長寺雲龍", rank:"SS", location:"spot_kenchoji", emoji:"☁️",
+   description:"建長寺の天井に描かれた雲龍の霊。寺を守護する龍。",
+   fortune:{ overall:"吉。高い志を持って努力すれば、必ず天に届く。", love:"精神的なつながりを大切にすると縁が深まる。", money:"長期的な計画が実を結ぶ。焦らず続けよ。", health:"精神的な充実が健康をもたらす。禅の心で過ごせ。", work:"高い目標を掲げて努力する時。上を目指せ。" },
+   stats:{ love:3, money:4, health:4, work:5 },
+   lucky:{ action:"高い場所から景色を眺める", item:"雲模様のもの", color:"水色" },
+   boostSpot:{ name:"建長寺 法堂", type:"向上運アップ", lat:35.3323, lng:139.5533, message:"雲龍が描かれた天井の下で誓うと、高みへの道が開かれる。" },
+   lat:35.3323, lng:139.5533, image:null},
+
+  {id:6, name:"長谷観音", rank:"SS", location:"spot_hasedera", emoji:"🙏",
+   description:"長谷寺の観音菩薩の慈悲の霊。",
+   fortune:{ overall:"中吉。優しさと慈悲の心が、大きな幸運を引き寄せる。", love:"思いやりが深い縁をもたらす。相手を大切にせよ。", money:"人のために使うお金が巡り巡って返ってくる。", health:"心身のバランスが整う。感謝の気持ちを持つと吉。", work:"チームワークで大きな成果。人の縁を大切に。" },
+   stats:{ love:4, money:3, health:4, work:4 },
+   lucky:{ action:"誰かに親切にする", item:"蓮の花モチーフ", color:"紫" },
+   boostSpot:{ name:"長谷寺 観音堂", type:"縁結び・慈悲のスポット", lat:35.3168, lng:139.5327, message:"観音様の前で感謝を伝えると、人との縁が深まる。" },
+   lat:35.3168, lng:139.5327, image:null},
+
+  {id:7, name:"稲村ヶ崎龍女", rank:"SS", location:"spot_inamura", emoji:"🧜‍♀️",
+   description:"海から現れる龍神の娘の伝説。",
+   fortune:{ overall:"吉。直感を信じて行動せよ。海のように広い心で進め。", love:"直感的に惹かれた相手との縁は本物。大切にせよ。", money:"インスピレーションが収入につながる。感性を磨け。", health:"水と縁があると健康運上昇。海や川の近くに行くと吉。", work:"創造性と直感を活かせる仕事で才能が開花。" },
+   stats:{ love:5, money:3, health:4, work:3 },
+   lucky:{ action:"夕暮れ時に海を眺める", item:"貝殻", color:"深海ブルー" },
+   boostSpot:{ name:"稲村ヶ崎", type:"直感・霊感アップ", lat:35.3030, lng:139.5260, message:"夕暮れ時、龍女が現れるといわれる岬。直感が研ぎ澄まされる。" },
+   lat:35.3030, lng:139.5260, image:null},
+
+  {id:8, name:"七里ヶ浜海神", rank:"SS", location:"spot_shichiri", emoji:"🌊",
+   description:"七里ヶ浜の海を守る古い神。",
+   fortune:{ overall:"吉。自然の大きな流れに身を任せると、道が開ける。", love:"自然体でいることが最大の魅力になる。無理をするな。", money:"流れに乗ることで自然と豊かさが集まってくる。", health:"海辺での運動が体力を強化。自然と触れ合うと吉。", work:"大きな流れを読む力が成功をもたらす。焦らず観察せよ。" },
+   stats:{ love:3, money:4, health:5, work:4 },
+   lucky:{ action:"夜明けの海を見る", item:"砂浜で拾った石", color:"海緑" },
+   boostSpot:{ name:"七里ヶ浜海岸", type:"浄化・流れ改善", lat:35.3050, lng:139.5150, message:"満潮時に波に向かって願うと、流れが変わるといわれる。" },
+   lat:35.3050, lng:139.5150, image:null},
+
+  // ===== S RANK =====
+  {id:9, name:"鎌倉権五郎霊", rank:"S", location:"spot_kamakura", emoji:"⚔️",
+   description:"勇猛な鎌倉武士の霊。",
+   fortune:{ overall:"吉。勇気ある行動が成功を呼ぶ。恐れずに踏み出せ。", love:"正直な気持ちを伝えることが縁を深める。", money:"果敢な挑戦が実を結ぶ。小さなことから始めよ。", health:"積極的な運動が吉。武道を始めるのも良い。", work:"困難を恐れない姿勢が評価される。前へ出よ。" },
+   stats:{ love:3, money:4, health:4, work:5 },
+   lucky:{ action:"困難なことに挑戦する", item:"鎧・刀モチーフ", color:"深紅" },
+   boostSpot:{ name:"鎌倉宮", type:"勇気・行動力アップ", lat:35.3219, lng:139.5531, message:"護良親王を祀るこの地で決意を固めると、勇気が湧いてくる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:10, name:"源頼朝守護霊", rank:"S", location:"spot_hachimangu", emoji:"👑",
+   description:"鎌倉幕府を開いた将軍の霊。",
+   fortune:{ overall:"中吉。大きな決断の時。リーダーとしての自覚を持て。", love:"主導権を持つことで関係が安定する。", money:"大局的な視点で財を管理すると吉。", health:"心労に注意。体を動かしストレスを発散せよ。", work:"統率力を活かしてチームを引っ張る時。" },
+   stats:{ love:3, money:4, health:3, work:5 },
+   lucky:{ action:"計画を立て実行に移す", item:"印鑑・判子", color:"黒" },
+   boostSpot:{ name:"源頼朝の墓", type:"決断・統率力アップ", lat:35.3238, lng:139.5580, message:"幕府を開いた意志の地。迷いがある時に訪れると決断力が増す。" },
+   lat:35.3258, lng:139.5562, image:null},
+
+  {id:11, name:"弁慶霊", rank:"S", location:"spot_kamakura", emoji:"🪓",
+   description:"豪傑僧兵の霊。力と忠義の象徴。",
+   fortune:{ overall:"吉。信念を守り続ければ必ず報われる。忠義が道を開く。", love:"一途な想いが相手の心を動かす。諦めるな。", money:"コツコツとした積み重ねが大きな富につながる。", health:"体力増強の時。肉体的な鍛錬が運気を上げる。", work:"信頼される働きが出世につながる。忠実に。" },
+   stats:{ love:3, money:3, health:5, work:4 },
+   lucky:{ action:"筋トレ・身体を鍛える", item:"薙刀・武器モチーフ", color:"茶" },
+   boostSpot:{ name:"腰越・満福寺", type:"忠義・信念強化", lat:35.3085, lng:139.4998, message:"弁慶が主を守った精神が宿る地。信念を持って祈ると力が湧く。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:12, name:"鎌倉天狗", rank:"S", location:"spot_kamakurayama", emoji:"👺",
+   description:"鎌倉の山に棲むといわれる天狗。",
+   fortune:{ overall:"小吉。高みを目指す努力を続けよ。天狗になることなかれ。", love:"高望みに注意。等身大の自分を大切に。", money:"焦りは失敗のもと。着実に積み上げることが大切。", health:"山歩き・登山が運気上昇につながる。", work:"技術を磨き続けることが最大の武器になる。" },
+   stats:{ love:2, money:3, health:4, work:4 },
+   lucky:{ action:"山道を歩く", item:"扇子", color:"紺" },
+   boostSpot:{ name:"鎌倉アルプス（天台山）", type:"修行・技術向上スポット", lat:35.3280, lng:139.5220, message:"天狗が修行したとされる山道。技を磨く誓いを立てる場所。" },
+   lat:35.3280, lng:139.5220, image:null},
+
+  {id:13, name:"烏天狗", rank:"S", location:"spot_hachimangu", emoji:"🐦‍⬛",
+   description:"神社の守護をする烏天狗。",
+   fortune:{ overall:"中吉。周囲をよく観察することで新しい機会が見えてくる。", love:"相手の小さなサインを見逃すな。観察力が恋を動かす。", money:"情報収集と分析が利益をもたらす。", health:"目の疲れに注意。自然の中で視野を広げると吉。", work:"情報を制する者が成功を制す。アンテナを張れ。" },
+   stats:{ love:3, money:4, health:3, work:4 },
+   lucky:{ action:"普段行かない場所に行く", item:"羽根", color:"黒" },
+   boostSpot:{ name:"鶴岡八幡宮 若宮", type:"観察力・情報運アップ", lat:35.3244, lng:139.5562, message:"烏天狗の視点で世界を見渡す場所。洞察力が鋭くなる。" },
+   lat:35.3258, lng:139.5562, image:null},
+
+  {id:14, name:"龍口明神", rank:"S", location:"spot_ryuko", emoji:"🐉",
+   description:"龍口寺周辺の龍神伝説。",
+   fortune:{ overall:"吉。新しい流れに乗れ。変化を恐れずに前進せよ。", love:"流れに従うと素敵な出会いがある。", money:"変化の波に乗ることで収入が増える。", health:"変化するリズムを大切に。規則正しい生活が吉。", work:"時代の流れを読み、先手を打て。" },
+   stats:{ love:4, money:4, health:3, work:4 },
+   lucky:{ action:"新しいルートで通勤・通学する", item:"龍モチーフのもの", color:"黄緑" },
+   boostSpot:{ name:"龍口寺", type:"流れ改善・変化促進", lat:35.3058, lng:139.4835, message:"龍神の伝説が残る地。新しい流れを引き込みたい時に訪れよ。" },
+   lat:35.3058, lng:139.4835, image:null},
+
+  {id:15, name:"片瀬龍神", rank:"S", location:"spot_katase", emoji:"🌀",
+   description:"片瀬海岸を守る海龍。",
+   fortune:{ overall:"小吉。休息をとりながら着実に進むことが大切。", love:"焦らずゆっくり距離を縮めると良い関係が築ける。", money:"無理のない計画を立てて実行すると安定する。", health:"休息を大切に。無理をしすぎると体に響く。", work:"マイペースを保ちながら成果を出すことが吉。" },
+   stats:{ love:3, money:3, health:3, work:3 },
+   lucky:{ action:"のんびり散歩する", item:"渦巻き模様のもの", color:"水色" },
+   boostSpot:{ name:"片瀬海岸 東浜", type:"リフレッシュ・回復スポット", lat:35.3070, lng:139.4870, message:"江の島を望む浜。心身の疲れをリセットできる癒しの地。" },
+   lat:35.3070, lng:139.4870, image:null},
+
+  {id:16, name:"湘南海坊主", rank:"S", location:"spot_shonan_sea", emoji:"👾",
+   description:"嵐の海に現れる巨大な影。",
+   fortune:{ overall:"末吉。慎重に進め。見えない危険に備えよ。", love:"軽率な行動は関係を壊す。慎重に言葉を選べ。", money:"リスクの高い投資は避けよ。守りを固める時。", health:"体調変化に敏感になれ。無理は禁物。", work:"慎重さが信頼を生む。一歩引いて状況を見極めよ。" },
+   stats:{ love:2, money:2, health:2, work:3 },
+   lucky:{ action:"家でゆっくり休む", item:"お守り", color:"グレー" },
+   boostSpot:{ name:"七里ヶ浜 見晴らし台", type:"危機察知・防護スポット", lat:35.3050, lng:139.5100, message:"嵐を見守った古の地。危険を察知する力が授かれるといわれる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:17, name:"材木座海神", rank:"S", location:"spot_zaimokuza", emoji:"🔱",
+   description:"材木座の海の守護神。",
+   fortune:{ overall:"吉。人との縁が大きな幸運をもたらす。絆を大切に。", love:"古い友人から恋が生まれる可能性。昔の縁を大切に。", money:"人脈が財をもたらす。人との繋がりに投資せよ。", health:"仲間と一緒に体を動かすと運気上昇。", work:"チームの力を最大化すると大きな成果が生まれる。" },
+   stats:{ love:4, money:4, health:3, work:4 },
+   lucky:{ action:"古い友人に連絡する", item:"トライデントモチーフ", color:"紺碧" },
+   boostSpot:{ name:"材木座海岸", type:"人縁・絆強化スポット", lat:35.3120, lng:139.5600, message:"漁師たちが集い語らった浜。人との縁を深める力が宿る。" },
+   lat:35.3120, lng:139.5600, image:null},
+
+  {id:18, name:"由比ヶ浜人魚", rank:"S", location:"spot_yuigahama", emoji:"🧜",
+   description:"浜辺に現れるといわれる人魚。",
+   fortune:{ overall:"中吉。恋愛運上昇。夢を追いかけることで道が開ける。", love:"素直な気持ちを伝えれば必ず伝わる。今が告白の時。", money:"夢を仕事にする挑戦が吉。好きなことで稼ぐ道を探せ。", health:"泳ぐ・水に触れる活動が体を整える。", work:"感性を活かした仕事で才能が開花する。" },
+   stats:{ love:5, money:3, health:4, work:3 },
+   lucky:{ action:"夕暮れ時に浜を歩く", item:"真珠", color:"桜色" },
+   boostSpot:{ name:"由比ヶ浜 海岸", type:"恋愛運・夢実現スポット", lat:35.3150, lng:139.5490, message:"人魚が現れるとされる夕暮れの浜。恋の願いが叶いやすい。" },
+   lat:35.3150, lng:139.5490, image:null},
+
+  {id:19, name:"七里ヶ浜龍霊", rank:"S", location:"spot_shichiri", emoji:"🐲",
+   description:"海底に眠る龍の霊。",
+   fortune:{ overall:"吉。長年の努力が実る時が来た。焦らず継続せよ。", love:"長い付き合いの人との関係が深まる。", money:"長期投資・積み立てが報われる時。", health:"持久力が上がる。長距離を走ると吉。", work:"継続は力なり。長年の積み重ねが評価される。" },
+   stats:{ love:3, money:4, health:4, work:4 },
+   lucky:{ action:"継続中のことを頑張る", item:"渦巻きの貝", color:"深蒼" },
+   boostSpot:{ name:"七里ヶ浜 岩礁", type:"忍耐・継続力強化", lat:35.3048, lng:139.5142, message:"海底の龍が眠るとされる岩場。長期の目標を誓う場所。" },
+   lat:35.3050, lng:139.5150, image:null},
+
+  {id:20, name:"腰越海神", rank:"S", location:"spot_koshigoe", emoji:"🌊",
+   description:"腰越の海の守護神。",
+   fortune:{ overall:"小吉。急がば回れ。遠回りに見える道が最善の道だ。", love:"焦って進めると逆効果。ゆっくりと信頼を築け。", money:"確実な方法を選ぶこと。近道には罠がある。", health:"休息と運動のバランスを保つことが大切。", work:"手堅い方法で着実に進むことが成功への近道。" },
+   stats:{ love:3, money:3, health:3, work:3 },
+   lucky:{ action:"遠回りして帰宅する", item:"コンパス・地図", color:"翠緑" },
+   boostSpot:{ name:"腰越 小動岬", type:"迷い解消・方向確認", lat:35.3055, lng:139.4988, message:"義経が主に手紙を書いた地。方向性に迷った時に訪れると答えが見つかる。" },
+   lat:35.3062, lng:139.5000, image:null},
+
+  {id:21, name:"大船観音霊", rank:"S", location:"spot_ofuna", emoji:"🙏",
+   description:"大船観音の慈悲の霊。",
+   fortune:{ overall:"吉。素直に人に頼ることで、道が開ける。", love:"甘えることも大切。頼り頼られる関係が深まる。", money:"人の力を借りることで大きな収益が生まれる。", health:"精神的なサポートを求めることが回復への道。", work:"チームワークと協力体制が成果を最大化する。" },
+   stats:{ love:4, money:3, health:4, work:4 },
+   lucky:{ action:"素直に助けを求める", item:"白い布・ハンカチ", color:"白" },
+   boostSpot:{ name:"大船観音寺", type:"心願成就・癒しスポット", lat:35.3433, lng:139.5298, message:"白い観音様が見守る場所。素直な心で祈ると願いが叶うといわれる。" },
+   lat:35.3433, lng:139.5298, image:null},
+
+  {id:22, name:"円覚寺守護霊", rank:"S", location:"spot_engakuji", emoji:"🏯",
+   description:"北鎌倉の寺を守る僧の霊。",
+   fortune:{ overall:"中吉。心を静めることで本当の答えが見えてくる。", love:"静かな時間を二人で共有すると絆が深まる。", money:"欲を手放すことで自然と豊かさが訪れる。", health:"心の平和が最大の健康法。日々の静寂を大切に。", work:"集中力と冷静さが最大の武器。迷いを捨てよ。" },
+   stats:{ love:3, money:3, health:5, work:4 },
+   lucky:{ action:"30分間スマホを手放す", item:"数珠", color:"藤色" },
+   boostSpot:{ name:"円覚寺 仏殿", type:"集中力・精神力強化", lat:35.3370, lng:139.5480, message:"禅の精神が宿る場所。心を静め、雑念を払う修行の地。" },
+   lat:35.3370, lng:139.5480, image:null},
+
+  {id:23, name:"寿福寺僧霊", rank:"S", location:"spot_jufukuji", emoji:"📿",
+   description:"古い僧の霊。修行の象徴。",
+   fortune:{ overall:"小吉。日々の修行と努力が必ずや実を結ぶ。", love:"内面を磨くことが最大の魅力になる。", money:"地道な努力の積み重ねが財を生む。", health:"規則正しい生活が運気を整える。", work:"基礎を固めることが長期的な成功につながる。" },
+   stats:{ love:2, money:3, health:4, work:4 },
+   lucky:{ action:"早起きして一日を始める", item:"写経セット", color:"灰" },
+   boostSpot:{ name:"寿福寺", type:"精進・基礎固めスポット", lat:35.3220, lng:139.5490, message:"北条政子・源実朝が眠る静寂の地。日常を見直す力をもらえる。" },
+   lat:35.3220, lng:139.5490, image:null},
+
+  {id:24, name:"光明寺龍神", rank:"S", location:"spot_komyoji", emoji:"🪷",
+   description:"光明寺の守護龍。",
+   fortune:{ overall:"吉。新しいチャンスが扉を叩いている。開けて飛び込め。", love:"新しい出会いに積極的に。今が縁を作る最高の時。", money:"新しいビジネスや投資が実を結ぶ。", health:"新しい習慣を始めると健康運が向上する。", work:"未経験のことへの挑戦が大きな成長をもたらす。" },
+   stats:{ love:4, money:4, health:3, work:5 },
+   lucky:{ action:"新しいことを一つ始める", item:"蓮の種", color:"朱色" },
+   boostSpot:{ name:"光明寺 山門", type:"新規開始・チャンス引き寄せ", lat:35.3130, lng:139.5610, message:"大きな山門が新たな道への入口。新しい出発を誓う場所。" },
+   lat:35.3130, lng:139.5610, image:null},
+
+  // ===== A RANK =====
+  {id:25, name:"鎌倉狐", rank:"A", location:"spot_kamakura", emoji:"🦊",
+   description:"鎌倉の森に棲む古狐。",
+   fortune:{ overall:"吉。知恵と機転が今の状況を打開する。", love:"頭の良さで相手を惹きつける。知的な会話が吉。", money:"情報と知識が財になる。学ぶことを惜しむな。", health:"頭を使いすぎに注意。休息とバランスが大切。", work:"頭脳と機転を活かして問題を解決する時。" },
+   stats:{ love:3, money:4, health:3, work:4 },
+   lucky:{ action:"本を読む・知識を深める", item:"尾のついたお守り", color:"橙" },
+   boostSpot:{ name:"佐助稲荷神社", type:"知恵・商売繁盛", lat:35.3238, lng:139.5398, message:"源頼朝を導いた稲荷神の地。知恵と商才を授かれる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:26, name:"鎌倉狸", rank:"A", location:"spot_kamakura", emoji:"🦝",
+   description:"寺の裏山に棲む狸。",
+   fortune:{ overall:"小吉。気楽に、肩の力を抜いて進むと良い結果が出る。", love:"自然体でいることが一番の魅力。リラックスして。", money:"無理のない範囲での行動が安定した収入につながる。", health:"リラックスした状態が最も回復力が高い。", work:"プレッシャーを感じすぎず、自分のペースを守れ。" },
+   stats:{ love:3, money:3, health:3, work:3 },
+   lucky:{ action:"好きな音楽を聴いてリラックス", item:"たぬきの置物", color:"茶" },
+   boostSpot:{ name:"覚園寺（鎌倉）", type:"癒し・リフレッシュ", lat:35.3280, lng:139.5600, message:"深い森の中の静かな寺。心の疲れをほぐしてくれる隠れ癒しスポット。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:27, name:"湘南河童", rank:"A", location:"spot_river", emoji:"🐢",
+   description:"川や海辺に現れる河童。",
+   fortune:{ overall:"中吉。水辺に行くと幸運が舞い込む。流れを変えよ。", love:"フレッシュな環境での出会いが吉。水辺デートが最高。", money:"流れを変える行動が新しい収入をもたらす。", health:"水泳・水辺でのスポーツが健康運を高める。", work:"環境を変えることで新しいアイデアが生まれる。" },
+   stats:{ love:3, money:3, health:4, work:3 },
+   lucky:{ action:"川や海辺を散歩する", item:"きゅうり", color:"緑" },
+   boostSpot:{ name:"滑川沿い", type:"流れ改善スポット", lat:35.3180, lng:139.5520, message:"鎌倉を流れる滑川沿い。流れに沿って歩くと停滞が解消される。" },
+   lat:35.3200, lng:139.5400, image:null},
+
+  {id:28, name:"由比ヶ浜幽霊", rank:"A", location:"spot_yuigahama", emoji:"👻",
+   description:"浜辺に現れる幽霊。",
+   fortune:{ overall:"末吉。夜道と深夜の一人行動に注意。昼間の行動が吉。", love:"過去の恋愛を引きずっていると新しい縁が遠ざかる。", money:"過去の失敗を繰り返さないよう注意。慎重に。", health:"睡眠不足に注意。夜更かしは運気を下げる。", work:"過去の失敗にとらわれず、前を向くことが大切。" },
+   stats:{ love:2, money:2, health:2, work:2 },
+   lucky:{ action:"早寝早起きを心がける", item:"厄除けお守り", color:"白" },
+   boostSpot:{ name:"由比ヶ浜 日の出スポット", type:"浄化・厄払い", lat:35.3145, lng:139.5485, message:"朝日が最初に当たる場所。過去のネガティブをリセットできる浄化スポット。" },
+   lat:35.3150, lng:139.5490, image:null},
+
+  {id:29, name:"七里ヶ浜海霊", rank:"A", location:"spot_shichiri", emoji:"💧",
+   description:"海の精霊。",
+   fortune:{ overall:"吉。海に行くと癒しと新しいアイデアが得られる。", love:"リラックスした状態での出会いが最善の縁をもたらす。", money:"心が穏やかな時ほど、良い判断ができる。", health:"海辺の空気が心身を癒す。積極的に自然に行け。", work:"クリアな頭で考えると最良の答えが出る。" },
+   stats:{ love:3, money:3, health:5, work:3 },
+   lucky:{ action:"海辺で深呼吸する", item:"シーグラス", color:"ターコイズ" },
+   boostSpot:{ name:"七里ヶ浜 海岸", type:"心身リセット・癒し", lat:35.3048, lng:139.5148, message:"夕暮れ時の七里ヶ浜は特に浄化力が高い。悩みを海に流せる場所。" },
+   lat:35.3050, lng:139.5150, image:null},
+
+  {id:30, name:"江ノ島白蛇", rank:"A", location:"spot_enoshima", emoji:"🐍",
+   description:"弁財天の使いの白蛇。",
+   fortune:{ overall:"大吉。金運が上昇する。財の蛇が富を運んでくる。", love:"美しい縁が訪れる。白蛇は縁結びの象徴でもある。", money:"臨時収入・予想外の収益が入る可能性大。", health:"肌・美容運が上昇。美しさが輝く時期。", work:"財務・会計系の仕事で才能が発揮される。" },
+   stats:{ love:4, money:5, health:4, work:3 },
+   lucky:{ action:"財布を整理・新調する", item:"白蛇の抜け殻（財布に入れる）", color:"金" },
+   boostSpot:{ name:"江島神社 奉安殿", type:"金運・縁結び最強スポット", lat:35.2990, lng:139.4793, message:"白蛇弁天が祀られる場所。金運と縁結びの両方にご利益がある。" },
+   lat:35.2993, lng:139.4801, image:null},
+
+  {id:31, name:"鎌倉座敷童", rank:"A", location:"spot_kamakura", emoji:"👶",
+   description:"家に幸運を呼ぶ子供の霊。",
+   fortune:{ overall:"吉。家庭・住まいに関することが好転する。", love:"家で過ごす時間を大切にすると縁が深まる。", money:"不動産・住まいに関する判断が吉と出る。", health:"家の環境を整えることが健康に直結する。", work:"仕事環境を整えると生産性が上がる。" },
+   stats:{ love:4, money:3, health:3, work:3 },
+   lucky:{ action:"部屋の掃除・模様替えをする", item:"子供の人形", color:"ピンク" },
+   boostSpot:{ name:"鎌倉 英勝寺", type:"家庭運・住運強化", lat:35.3222, lng:139.5488, message:"徳川ゆかりの尼寺。家族や家庭の縁を結ぶ力が宿る。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:32, name:"鎌倉狐火", rank:"A", location:"spot_forest", emoji:"🔥",
+   description:"夜に現れる狐火。",
+   fortune:{ overall:"小吉。夜の行動は慎重に。直感で動く前に考える。", love:"噂や誤解に注意。きちんと確認してから動け。", money:"怪しい話には乗らないこと。詐欺に警戒を。", health:"夜更かしは禁物。規則正しいリズムを保て。", work:"噂や誤情報に振り回されないよう注意。" },
+   stats:{ love:2, money:2, health:3, work:3 },
+   lucky:{ action:"情報を裏取りしてから行動する", item:"ランタン・ろうそく", color:"橙" },
+   boostSpot:{ name:"祇園山ハイキングコース", type:"直感磨き・浄化スポット", lat:35.3260, lng:139.5510, message:"鎌倉の夜を見守る山道。直感を磨き、惑わされない心を養う場所。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:33, name:"鎌倉山狼霊", rank:"A", location:"spot_kamakurayama", emoji:"🐺",
+   description:"山の守護狼。",
+   fortune:{ overall:"吉。あなたは今、見えない力に守られている。", love:"信頼できるパートナーとの絆が深まる。", money:"守りを固めることで資産を守れる。", health:"自然の中で過ごすことが体力回復につながる。", work:"チームを守るリーダーとしての資質が開花。" },
+   stats:{ love:3, money:3, health:4, work:4 },
+   lucky:{ action:"山や森の中を歩く", item:"狼のモチーフ", color:"銀" },
+   boostSpot:{ name:"鎌倉山 展望台", type:"守護・安全祈願スポット", lat:35.3270, lng:139.5200, message:"鎌倉を一望できる高台。守護の力を感じ、安全を祈る場所。" },
+   lat:35.3280, lng:139.5220, image:null},
+
+  {id:34, name:"鎌倉鹿霊", rank:"A", location:"spot_forest", emoji:"🦌",
+   description:"森の鹿の霊。",
+   fortune:{ overall:"中吉。自然に触れることで心が洗われ、道が見えてくる。", love:"純粋な気持ちで接することが相手の心を開く。", money:"自然・環境に関連した仕事や投資が吉。", health:"森林浴・アウトドアが心身を癒す最良の方法。", work:"純粋な情熱を持って取り組むと成果が出る。" },
+   stats:{ love:3, money:3, health:5, work:3 },
+   lucky:{ action:"公園や森を散歩する", item:"木の実・どんぐり", color:"緑" },
+   boostSpot:{ name:"瑞泉寺（鎌倉）", type:"自然運・癒しスポット", lat:35.3282, lng:139.5621, message:"深い緑に囲まれた谷戸の寺。自然のエネルギーで心を癒せる場所。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:35, name:"湘南イルカ霊", rank:"A", location:"spot_shonan_sea", emoji:"🐬",
+   description:"海で遊ぶイルカの霊。",
+   fortune:{ overall:"吉。楽しい出来事が連続して訪れる。明るく積極的に。", love:"楽しい時間を共有することが縁を深める。遊び心を忘れずに。", money:"楽しみながら稼ぐ方法を見つけると吉。", health:"楽しいことをすることが最大の健康法。笑いが吉。", work:"楽しんで仕事に取り組む姿勢が周りを引きつける。" },
+   stats:{ love:4, money:3, health:5, work:4 },
+   lucky:{ action:"友人と遊ぶ・笑う", item:"イルカモチーフ", color:"水色" },
+   boostSpot:{ name:"江の島 シーキャンドル付近", type:"喜び・活力アップスポット", lat:35.3002, lng:139.4816, message:"海と空が開けた場所。イルカのように自由に楽しむエネルギーが満ちる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:36, name:"湘南海亀霊", rank:"A", location:"spot_shonan_sea", emoji:"🐢",
+   description:"長寿の象徴の亀。",
+   fortune:{ overall:"吉。健康運が上昇する。長期的な視点で物事を見よ。", love:"長く続く、安定した関係が築ける時。", money:"長期投資・年金など、じっくり育てる資産形成が吉。", health:"体の声を丁寧に聞くことが長寿の秘訣。", work:"長期プロジェクトで実力が発揮される。" },
+   stats:{ love:3, money:4, health:5, work:4 },
+   lucky:{ action:"健康診断に行く", item:"亀甲紋のもの", color:"緑" },
+   boostSpot:{ name:"稲村ヶ崎 海岸", type:"長寿・健康祈願スポット", lat:35.3025, lng:139.5255, message:"古来、亀が上がると縁起が良いとされた浜。健康と長寿を願う場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:37, name:"鎌倉武士霊", rank:"A", location:"spot_kamakura", emoji:"⚔️",
+   description:"鎌倉武士の魂。",
+   fortune:{ overall:"吉。覚悟を持って行動せよ。迷いを捨て、前進せよ。", love:"はっきりと気持ちを伝えることが関係を前進させる。", money:"明確な目標を持ち、そこに向けて投資せよ。", health:"鍛錬と規律ある生活が運気を上げる。", work:"プロフェッショナルとしての誇りを持て。" },
+   stats:{ love:3, money:4, health:4, work:5 },
+   lucky:{ action:"目標を紙に書き出す", item:"刀のストラップ", color:"深紅" },
+   boostSpot:{ name:"鎌倉市内 武家屋敷跡", type:"決断力・プロ意識向上", lat:35.3219, lng:139.5467, message:"幾多の武士が修練を積んだ鎌倉の地。覚悟を決める場所として最適。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:38, name:"鎌倉姫霊", rank:"A", location:"spot_kamakura", emoji:"👘",
+   description:"古い姫の霊。",
+   fortune:{ overall:"中吉。恋の予感。美意識を磨くことで運命の縁が引き寄せられる。", love:"自分を磨くことが最高の恋愛戦略。魅力が増している。", money:"美しいものへの投資が吉。センスが収入につながる。", health:"美容・スキンケアが運気を高める。自分を大切に。", work:"センスと審美眼を活かした仕事で才能が開花する。" },
+   stats:{ love:5, money:3, health:4, work:3 },
+   lucky:{ action:"美容院・エステに行く", item:"鏡・コンパクト", color:"桜色" },
+   boostSpot:{ name:"鎌倉 荏柄天神社", type:"美運・恋愛成就スポット", lat:35.3261, lng:139.5593, message:"学問と縁結びの神が宿る地。美しさと縁を磨く場所として親しまれている。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:39, name:"鎌倉猫又", rank:"A", location:"spot_kamakura", emoji:"🐱",
+   description:"長生きした猫の妖怪。",
+   fortune:{ overall:"小吉。慎重に行動せよ。猫のように静かに、しかし確実に。", love:"相手を深く観察することで本当の気持ちが見えてくる。", money:"大きなリスクは避け、安定した方法を選べ。", health:"マイペースを守ることが体調管理の秘訣。", work:"焦らず着実に。猫のような優雅さで仕事をせよ。" },
+   stats:{ love:3, money:3, health:3, work:4 },
+   lucky:{ action:"猫カフェに行く・猫と触れ合う", item:"猫モチーフのアクセサリー", color:"金" },
+   boostSpot:{ name:"鎌倉市内 猫の多い小路", type:"慎重運・観察力アップ", lat:35.3219, lng:139.5450, message:"猫が多く集まる鎌倉の路地。猫又の知恵を授かれる場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:40, name:"湘南波小僧", rank:"A", location:"spot_shonan_sea", emoji:"🌊",
+   description:"波に乗る小さな妖怪。",
+   fortune:{ overall:"吉。遊び心と柔軟性が新しいチャンスを呼び込む。", love:"楽しさを共有できる人との縁が深まる。", money:"柔軟な発想が新しいビジネスチャンスを生む。", health:"サーフィン・マリンスポーツが運気を高める。", work:"流れに乗ることで仕事がスムーズに進む。" },
+   stats:{ love:3, money:3, health:4, work:3 },
+   lucky:{ action:"初めてのことに挑戦する", item:"サーフボードモチーフ", color:"水色" },
+   boostSpot:{ name:"七里ヶ浜 サーフスポット", type:"流れ乗り・柔軟性アップ", lat:35.3048, lng:139.5140, message:"湘南随一のサーフスポット。波に乗るように人生の波を掴む力を授かれる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  // ===== B RANK =====
+  {id:41, name:"鎌倉灯籠霊", rank:"B", location:"spot_temple", emoji:"🏮",
+   description:"古い灯籠の霊。",
+   fortune:{ overall:"小吉。夜道と暗い場所での行動に注意。光を大切に。", love:"明るい場所・昼間のデートが吉。", money:"明確な収支管理が財運を安定させる。", health:"明るい環境と十分な睡眠が健康の基本。", work:"透明性を持って仕事をすることが信頼を生む。" },
+   stats:{ love:2, money:3, health:3, work:3 },
+   lucky:{ action:"ろうそくや灯りをともす", item:"小さな提灯", color:"橙" },
+   boostSpot:{ name:"鎌倉 大巧寺", type:"安全祈願スポット", lat:35.3234, lng:139.5546, message:"安産と縁結びで有名な小さな寺。灯籠の光に照らされた静かな境内。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:42, name:"鎌倉井戸霊", rank:"B", location:"spot_temple", emoji:"🕳️",
+   description:"古井戸の霊。",
+   fortune:{ overall:"末吉。無理は禁物。深みにはまる前に引き返す勇気を。", love:"深入りしすぎに注意。適度な距離感が大切。", money:"無謀な投資や借金は厳禁。堅実路線を守れ。", health:"慢性的な疲労に注意。早めの対処が重要。", work:"抱え込みすぎに注意。助けを求める勇気を。" },
+   stats:{ love:2, money:2, health:2, work:2 },
+   lucky:{ action:"悩みを誰かに打ち明ける", item:"清水", color:"深藍" },
+   boostSpot:{ name:"鎌倉 銭洗弁財天", type:"悩み解消・浄化スポット", lat:35.3273, lng:139.5416, message:"お金を洗うと増えるとされる霊泉。悩みや穢れを洗い流す浄化の地。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:43, name:"湘南潮霊", rank:"B", location:"spot_shonan_sea", emoji:"🌬️",
+   description:"潮の精霊。",
+   fortune:{ overall:"吉。小さな幸運が積み重なって大きな幸せになる。", love:"小さな気遣いが相手の心を動かす。", money:"細かい節約が大きな財産につながる。", health:"潮風を浴びると心身がリフレッシュする。", work:"細かい仕事を丁寧にこなすことが評価につながる。" },
+   stats:{ love:3, money:3, health:3, work:3 },
+   lucky:{ action:"海辺でジョギング・ウォーキング", item:"潮流模様のもの", color:"青緑" },
+   boostSpot:{ name:"江の島 岩屋洞窟", type:"浄化・リフレッシュ", lat:35.2976, lng:139.4779, message:"海水が侵食した洞窟。潮の力で体の穢れを浄化できる場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:44, name:"鎌倉石霊", rank:"B", location:"spot_temple", emoji:"🪨",
+   description:"石に宿る精霊。",
+   fortune:{ overall:"小吉。ゆっくりと、しかし確実に進むことが重要。", love:"安定した関係を築くことを優先せよ。", money:"堅実な貯蓄と安全な投資が基本。", health:"骨・関節に注意。カルシウムを積極的に取れ。", work:"基礎を固めることが長期的な成功の秘訣。" },
+   stats:{ love:2, money:3, health:3, work:3 },
+   lucky:{ action:"好きな石や鉱石を集める", item:"パワーストーン", color:"グレー" },
+   boostSpot:{ name:"鎌倉 浄智寺", type:"土台固め・安定スポット", lat:35.3358, lng:139.5498, message:"岩肌に沿って建つ静かな寺。揺るぎない土台を築く力をもらえる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:45, name:"鎌倉森精", rank:"B", location:"spot_forest", emoji:"🌿",
+   description:"森の精霊。",
+   fortune:{ overall:"吉。自然の力があなたを癒し、新しいエネルギーを与える。", love:"自然の中でのデートが縁を深める最良の方法。", money:"環境・自然関連の事業や投資が吉。", health:"森林浴が心身のバランスを整える最良の方法。", work:"自然からインスピレーションを得ることで創造性が高まる。" },
+   stats:{ love:3, money:3, health:4, work:3 },
+   lucky:{ action:"森や公園で深呼吸する", item:"植物・観葉植物", color:"緑" },
+   boostSpot:{ name:"鎌倉アルプス ハイキングコース", type:"自然エネルギー充電スポット", lat:35.3280, lng:139.5220, message:"鎌倉の豊かな森の中。自然のエネルギーを全身で受け取れる場所。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:46, name:"鎌倉竹林精", rank:"B", location:"spot_forest", emoji:"🎋",
+   description:"竹林の精霊。",
+   fortune:{ overall:"中吉。成長の兆しがある。柔軟性と強さを兼ね備えよ。", love:"しなやかな対応が相手との関係を発展させる。", money:"柔軟な発想で収入の柱を増やせる。", health:"姿勢を正すことが健康の基本。背筋を伸ばせ。", work:"柔軟に対応しながらも芯は曲げない姿勢が評価される。" },
+   stats:{ love:3, money:3, health:3, work:4 },
+   lucky:{ action:"竹林の中を散歩する", item:"竹モチーフのもの", color:"若竹色" },
+   boostSpot:{ name:"報国寺 竹の庭", type:"成長・柔軟性アップスポット", lat:35.3244, lng:139.5620, message:"鎌倉随一の竹林。竹の成長力と柔軟さを授かれる。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:47, name:"鎌倉影霊", rank:"B", location:"spot_kamakura", emoji:"👤",
+   description:"影に潜む霊。",
+   fortune:{ overall:"末吉。慎重に。影に潜む危険を見極める目を持て。", love:"相手の本心を確認してから深く関わること。", money:"表面的な甘い話には乗らないこと。裏を見よ。", health:"精神的なストレスが体に影響しやすい時期。注意。", work:"裏側の事情を把握してから動くことが重要。" },
+   stats:{ love:2, money:2, health:2, work:3 },
+   lucky:{ action:"日光を浴びる・明るい場所に行く", item:"鏡", color:"銀" },
+   boostSpot:{ name:"鎌倉 妙本寺", type:"厄払い・浄化スポット", lat:35.3221, lng:139.5560, message:"深い谷戸に建つ古寺。影に潜む厄を払い、明るい運気を引き込む。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:48, name:"湘南霧霊", rank:"B", location:"spot_shonan_sea", emoji:"🌫️",
+   description:"海霧の精霊。",
+   fortune:{ overall:"小吉。霧が晴れるまで待て。迷いがある時は立ち止まれ。", love:"曖昧な関係をはっきりさせることが次のステップ。", money:"不明確な状況での大きな決断は避けること。", health:"体調の変化を見逃さないよう注意が必要。", work:"状況が不明瞭な時は情報収集を優先せよ。" },
+   stats:{ love:2, money:2, health:3, work:3 },
+   lucky:{ action:"霧の中を散歩する・早朝に出かける", item:"クリスタル（透明）", color:"白" },
+   boostSpot:{ name:"江の島 岩屋 入り口", type:"迷い晴らし・明晰スポット", lat:35.2975, lng:139.4778, message:"霧が立ち込める早朝の江の島。霧が晴れると同時に迷いも消えるといわれる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:49, name:"湘南カモメ妖怪", rank:"B", location:"spot_shonan_sea", emoji:"🕊️",
+   description:"浜辺のカモメの妖怪。",
+   fortune:{ overall:"吉。旅行・移動運が上昇。遠くへ行くことで新しい縁が生まれる。", love:"遠距離恋愛や旅先での出会いが吉。", money:"旅行・観光・輸送関連の仕事が吉。", health:"環境を変えることが心身のリフレッシュに最適。", work:"新しい場所への出張や転勤が成長につながる。" },
+   stats:{ love:3, money:3, health:4, work:3 },
+   lucky:{ action:"いつもと違うルートを歩く", item:"羽根", color:"白" },
+   boostSpot:{ name:"腰越 漁港", type:"旅運・移動運アップ", lat:35.3065, lng:139.4995, message:"漁師たちが旅立った港。旅運と出会い運を高めてくれる地。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:50, name:"鎌倉カラス妖怪", rank:"B", location:"spot_kamakura", emoji:"🐦‍⬛",
+   description:"町を見守るカラスの霊。",
+   fortune:{ overall:"小吉。観察力と情報収集が状況を好転させる鍵。", love:"相手の言葉より行動を見ること。", money:"情報の優位性が利益を生む。アンテナを高く。", health:"環境の変化に敏感になり、早めに対処せよ。", work:"先を読む情報収集力が最大の武器になる。" },
+   stats:{ love:2, money:3, health:3, work:4 },
+   lucky:{ action:"ニュースや業界情報を深読みする", item:"黒いペン・手帳", color:"黒" },
+   boostSpot:{ name:"鶴岡八幡宮 境内", type:"情報・観察力スポット", lat:35.3258, lng:139.5562, message:"八幡宮のカラスが見守るこの地。鋭い観察眼を授かれるといわれる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:51, name:"鎌倉蛙霊", rank:"B", location:"spot_river", emoji:"🐸",
+   description:"雨の日に現れる蛙霊。",
+   fortune:{ overall:"吉。変化の兆しがある。雨の後の晴れのように明るい未来が来る。", love:"変化を受け入れることで関係が新たなステージへ進む。", money:"変化の波を捉えた投資が吉。柔軟に対応せよ。", health:"梅雨・湿気の時期は体調管理に注意。", work:"変化に素早く対応する能力が評価される。" },
+   stats:{ love:3, money:3, health:3, work:3 },
+   lucky:{ action:"雨の日に外に出る", item:"カエルの置物（無事カエル）", color:"緑" },
+   boostSpot:{ name:"滑川 上流部", type:"変化促進・浄化スポット", lat:35.3270, lng:139.5590, message:"蛙が多く棲む滑川の源流付近。変化を促す自然のエネルギーが満ちる。" },
+   lat:35.3200, lng:139.5400, image:null},
+
+  {id:52, name:"湘南クラゲ霊", rank:"B", location:"spot_shonan_sea", emoji:"🪼",
+   description:"海を漂うクラゲの精。",
+   fortune:{ overall:"小吉。流れに任せることも大切。焦らず漂う時期。", love:"焦らず自然な流れに任せると縁がやってくる。", money:"無理のないペースでコツコツ積み上げることが吉。", health:"リラックスすることが最良の健康法。", work:"プレッシャーから解放されるとアイデアが湧いてくる。" },
+   stats:{ love:2, money:2, health:3, work:2 },
+   lucky:{ action:"ぼーっとする時間を作る", item:"透明のオブジェ", color:"水色" },
+   boostSpot:{ name:"七里ヶ浜 海の家跡地", type:"リラックス・受容スポット", lat:35.3050, lng:139.5155, message:"夏の喧騒が去った静かな浜。何も考えずにいる時間が最大の充電になる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:53, name:"湘南イワシ霊", rank:"B", location:"spot_shonan_sea", emoji:"🐟",
+   description:"群れを守る魚霊。",
+   fortune:{ overall:"吉。仲間と共に動くことで大きな力が生まれる。", love:"グループでの出会いが吉。共通の趣味の友人を大切に。", money:"仲間と協力して始めるビジネスが吉。", health:"チームスポーツが運気と体力を共に高める。", work:"チームで動くことで個人では出せない成果が生まれる。" },
+   stats:{ love:3, money:3, health:3, work:4 },
+   lucky:{ action:"グループやチームで活動する", item:"魚型のお守り", color:"銀" },
+   boostSpot:{ name:"腰越 小漁港", type:"団結・仲間運強化スポット", lat:35.3065, lng:139.5000, message:"漁師たちが力を合わせてきた港。チームワークの大切さを思い出させる場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  // ===== C RANK =====
+  {id:54, name:"鎌倉ヤモリ妖怪", rank:"C", location:"spot_house", emoji:"🦎",
+   description:"家を守る小さな妖怪。", fortune:{ overall:"小吉。家運あり。住まいを大切にすると吉。", love:"家での時間を充実させると縁が深まる。", money:"家計の見直しが財運を上げる。", health:"家の環境を整えると健康運向上。", work:"自宅ワークが吉の時期。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"家の掃除をする", item:"ヤモリモチーフ", color:"緑" }, boostSpot:{ name:"鎌倉市内（住宅地）", type:"家運・住運スポット", lat:35.3219, lng:139.5467, message:"古い家屋が残る鎌倉の路地。家と家族の縁を感じられる場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:55, name:"鎌倉猫霊", rank:"C", location:"spot_kamakura", emoji:"🐈",
+   description:"町の猫の霊。", fortune:{ overall:"吉。小さな幸運が日常に隠れている。目を細めて探せ。", love:"ゆったりとした時間の中に縁が生まれる。", money:"小さな節約が積み重なって大きな財になる。", health:"マイペースな生活が体と心を安定させる。", work:"独自のスタイルで仕事をすると個性が光る。" }, stats:{ love:3, money:2, health:3, work:3 }, lucky:{ action:"猫を撫でる・猫と遊ぶ", item:"猫モチーフ", color:"金" }, boostSpot:{ name:"鎌倉 小町通り", type:"小幸運・日常運アップ", lat:35.3237, lng:139.5551, message:"猫が集まる鎌倉の商店街。小さな幸せが溢れる癒しの場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:56, name:"湘南タコ霊", rank:"C", location:"spot_shonan_sea", emoji:"🐙",
+   description:"海のタコの精。", fortune:{ overall:"末吉。油断大敵。複数のことに手を出しすぎに注意。", love:"複数の人と同時進行は禁物。一途に。", money:"多角化しすぎて共倒れに注意。集中せよ。", health:"手・腕の疲労に注意。休ませること。", work:"仕事を抱え込みすぎず、適切に委任せよ。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"やることリストを整理・削減する", item:"タコモチーフ（面白グッズ）", color:"赤紫" }, boostSpot:{ name:"片瀬漁港", type:"集中力・整理スポット", lat:35.3068, lng:139.4862, message:"漁師が網を整理した港。複雑に絡まった状況を解きほぐす力をもらえる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:57, name:"湘南エビ霊", rank:"C", location:"spot_shonan_sea", emoji:"🦐",
+   description:"小さな海の精。", fortune:{ overall:"小吉。控えめな行動が吉。腰を低く、謙虚に進め。", love:"控えめな態度が相手の保護欲を引き出す。", money:"大きな欲は出さず、手堅い方法で積み立てよ。", health:"腰痛に注意。正しい姿勢を心がけよ。", work:"謙虚な姿勢が上司や同僚の信頼を得る。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"お礼の言葉を多めに言う", item:"エビモチーフ（長寿の縁起物）", color:"赤" }, boostSpot:{ name:"七里ヶ浜 漁師の浜", type:"謙虚運・長寿スポット", lat:35.3050, lng:139.5145, message:"漁師たちが謙虚に海に感謝した浜。控えめな心が幸運を呼ぶ場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:58, name:"湘南サザエ霊", rank:"C", location:"spot_shonan_sea", emoji:"🐚",
+   description:"貝殻の精霊。", fortune:{ overall:"吉。堅実に進め。守りを固めながら前に進むと吉。", love:"安定した関係を築くことを最優先に。", money:"安全確実な方法で財を守ることが重要。", health:"定期的な健康チェックが重要。", work:"ルーティンワークをきちんとこなすことが信頼を生む。" }, stats:{ love:2, money:3, health:3, work:3 }, lucky:{ action:"貝殻を拾って集める", item:"サザエの殻", color:"茶" }, boostSpot:{ name:"材木座海岸 干潮時", type:"堅実運・安定スポット", lat:35.3120, lng:139.5600, message:"潮が引くと現れる磯。堅実さと着実さを象徴する地。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:59, name:"鎌倉寺小僧", rank:"C", location:"spot_temple", emoji:"👦",
+   description:"寺で遊ぶ小僧妖怪。", fortune:{ overall:"小吉。遊びすぎに注意。集中すべき時はしっかり集中せよ。", love:"遊び心は大切だが、真剣さも示すこと。", money:"衝動買いに注意。計画的な支出を心がけよ。", health:"活発に動くことは吉だが、怪我に注意。", work:"遊び感覚で仕事をするのは良いが、締め切りは守れ。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"子供と遊ぶ・遊び心を思い出す", item:"お手玉・コマ", color:"朱色" }, boostSpot:{ name:"建長寺 境内", type:"修行・集中力スポット", lat:35.3323, lng:139.5533, message:"小僧が修行した禅寺。遊び心を持ちながらも真剣に取り組む心を養う場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:60, name:"鎌倉提灯お化け", rank:"C", location:"spot_temple", emoji:"🏮",
+   description:"夜に揺れる提灯妖怪。", fortune:{ overall:"末吉。夜道注意。暗い時間帯の単独行動は避けよ。", love:"夜のデートより昼間の活動が吉。", money:"夜の賭け事・夜遊びによる出費を控えよ。", health:"夜更かしが続くと体調を崩す。早く寝よ。", work:"夜遅くまでの残業は避け、効率を上げよ。" }, stats:{ love:2, money:1, health:2, work:2 }, lucky:{ action:"早寝早起きを一週間続ける", item:"小さな提灯", color:"橙" }, boostSpot:{ name:"鎌倉 夕暮れの小町通り", type:"厄払い・夜除けスポット", lat:35.3237, lng:139.5551, message:"夕暮れ前に参拝すると、夜の厄から守られるといわれる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:61, name:"鎌倉木霊", rank:"C", location:"spot_forest", emoji:"🌳",
+   description:"木に宿る精霊。", fortune:{ overall:"吉。自然に触れることで失っていた力が戻ってくる。", love:"自然の中でのデートが縁を深める。", money:"長期的な視点で財を育てることが吉。", health:"木陰での休息が体力を回復させる。", work:"じっくり取り組むことで大きな実を結ぶ。" }, stats:{ love:3, money:2, health:4, work:3 }, lucky:{ action:"木に触れる・木陰で休む", item:"木の葉・木のストラップ", color:"緑" }, boostSpot:{ name:"瑞泉寺 庭園", type:"自然力充電スポット", lat:35.3282, lng:139.5621, message:"深い緑が生い茂る谷戸の庭園。木々の精霊から力をもらえる場所。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:62, name:"湘南浜精", rank:"C", location:"spot_beach", emoji:"🏖️",
+   description:"浜辺の精霊。", fortune:{ overall:"小吉。のんびりとした時間が最良の回復をもたらす。", love:"ゆっくり過ごすデートが二人の距離を縮める。", money:"焦らないことが安定した財運につながる。", health:"砂浜の上を歩くと足裏への刺激で健康運向上。", work:"のんびり考える時間が最良のアイデアを生む。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"砂浜を裸足で歩く", item:"砂時計", color:"砂色" }, boostSpot:{ name:"由比ヶ浜 浜辺", type:"癒し・のんびり運スポット", lat:35.3150, lng:139.5490, message:"波の音が心を癒す由比ヶ浜。のんびりした時間が最大の運気回復法。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:63, name:"湘南砂精", rank:"C", location:"spot_beach", emoji:"⏳",
+   description:"砂の妖精。", fortune:{ overall:"小吉。足元注意。一歩一歩確かめながら進め。", love:"急ぎすぎず、砂時計のように時間をかけて縁を育てよ。", money:"少しずつ積み立てることが砂の山を作る。", health:"足腰の強化が必要。ウォーキングを習慣に。", work:"細部の積み重ねが大きな成果を生む。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"砂浜で砂文字を書く", item:"砂時計", color:"砂" }, boostSpot:{ name:"七里ヶ浜 砂浜", type:"着実運・地盤固めスポット", lat:35.3048, lng:139.5145, message:"細かな砂が続く浜。一歩一歩を丁寧に歩む心を養う場所。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:64, name:"湘南貝精", rank:"C", location:"spot_beach", emoji:"🐚",
+   description:"貝殻の妖精。", fortune:{ overall:"吉。小さな幸せを大切に拾い集めることで豊かになれる。", love:"些細な日常の中に幸せの種が隠れている。", money:"小銭の積み立てが大きな財産になる。", health:"浜辺でリラックスすることが体を癒す。", work:"細かい仕事を丁寧に仕上げることが評価される。" }, stats:{ love:3, money:2, health:3, work:2 }, lucky:{ action:"浜辺で貝殻を拾う", item:"お気に入りの貝殻", color:"ピンク" }, boostSpot:{ name:"材木座海岸", type:"小幸運収集スポット", lat:35.3120, lng:139.5600, message:"多様な貝殻が打ち上げられる浜。小さな幸せを見つける目を育てる場所。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:65, name:"湘南海草精", rank:"C", location:"spot_shonan_sea", emoji:"🌿",
+   description:"海草の精霊。", fortune:{ overall:"小吉。ゆっくり着実に伸びることが大切。焦りは禁物。", love:"ゆっくりと関係を育てることが深い縁につながる。", money:"地道な努力が安定した収入の基盤を作る。", health:"海藻を食べると健康運が向上する。", work:"コツコツとした取り組みが着実な成長を生む。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"海藻サラダやわかめを食べる", item:"緑色のアクセサリー", color:"深緑" }, boostSpot:{ name:"江の島 磯場", type:"忍耐・成長スポット", lat:35.2980, lng:139.4790, message:"海草が岩に根を張る磯。ゆっくりと深く根を伸ばす力をもらえる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:66, name:"鎌倉影狐", rank:"C", location:"spot_kamakura", emoji:"🦊",
+   description:"影の中の狐。", fortune:{ overall:"末吉。慎重に。化かされないよう物事の本質を見極めよ。", love:"甘い言葉に注意。相手の行動で判断せよ。", money:"美味しい話には裏がある。慎重に確認すること。", health:"精神的な疲労が体に出やすい時期。", work:"情報操作や噂に注意。真実を確認してから動け。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"重要な決断は一日置いてから行う", item:"鏡（真実を映す）", color:"金" }, boostSpot:{ name:"佐助稲荷神社 山頂", type:"洞察力・見極め力スポット", lat:35.3245, lng:139.5400, message:"狐の神が宿る山の上。物事の真実を見抜く力を授かれる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:67, name:"鎌倉影狸", rank:"C", location:"spot_kamakura", emoji:"🦝",
+   description:"影に潜む狸。", fortune:{ overall:"小吉。焦るな。化かされても笑って立ち直ることが肝要。", love:"期待しすぎると幻滅する。現実的に見よ。", money:"見栄を張った出費が家計を圧迫する。分相応に。", health:"思い込みによる体調不良に注意。", work:"見栄を張らず、実力通りに動くことが信頼につながる。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"鏡で自分の素顔を見つめる", item:"狸の置物", color:"茶" }, boostSpot:{ name:"鎌倉 覚園寺", type:"素直運・正直スポット", lat:35.3280, lng:139.5600, message:"ありのままの心を大切にする古寺。化かし化かされる日常から解放される場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:68, name:"鎌倉影猫", rank:"C", location:"spot_kamakura", emoji:"🐱",
+   description:"夜の猫霊。", fortune:{ overall:"小吉。静かに、慎重に行動せよ。夜は特に注意。", love:"夜の誘いには慎重に。昼間の付き合いを大切に。", money:"夜の出費は翌朝後悔することが多い。控えよ。", health:"夜更かしと夜食が体調を崩す原因になる。", work:"残業より早起きして仕事をする方が生産性が高い。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"夜のSNSをやめて早寝する", item:"猫目モチーフ", color:"黄" }, boostSpot:{ name:"鎌倉 段葛 早朝", type:"生活リズム改善スポット", lat:35.3240, lng:139.5555, message:"早朝の段葛は猫が多く集まる。朝の静寂の中で生活リズムを整える場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:69, name:"湘南波霊", rank:"C", location:"spot_shonan_sea", emoji:"🌊",
+   description:"波の精霊。", fortune:{ overall:"吉。波に乗るように気分転換すると運気が上昇する。", love:"気持ちを切り替えることで新しい縁が生まれる。", money:"固執せず、新しいお金の流れを作ることが吉。", health:"リズミカルな運動が体を整える。", work:"気分転換をうまく取り入れることで仕事効率が上がる。" }, stats:{ love:3, money:2, health:3, work:3 }, lucky:{ action:"音楽を聴きながら散歩する", item:"波模様のもの", color:"水色" }, boostSpot:{ name:"七里ヶ浜 夕暮れ時", type:"気分転換・リフレッシュスポット", lat:35.3048, lng:139.5148, message:"波と夕日が美しい絶景スポット。気分を切り替える最高の場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:70, name:"湘南潮霊", rank:"C", location:"spot_shonan_sea", emoji:"💦",
+   description:"潮の小精霊。", fortune:{ overall:"小吉。休息をとることが次の飛躍への準備になる。", love:"無理して会うより、ゆっくり充電する時間も大切。", money:"今は貯める時期。大きな支出は控えよ。", health:"体の声を聞いてしっかり休むことが重要。", work:"休息と仕事のバランスを保つことが長期的成功の鍵。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"昼寝・十分な休息をとる", item:"潮モチーフ", color:"青緑" }, boostSpot:{ name:"江の島 サンセットテラス", type:"休息・充電スポット", lat:35.2998, lng:139.4810, message:"海を眺めてゆっくり過ごせる場所。心身の疲れをリセットできる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:71, name:"湘南風霊", rank:"C", location:"spot_shonan", emoji:"💨",
+   description:"湘南の風の精。", fortune:{ overall:"吉。旅運・移動運あり。風のように軽やかに動け。", love:"遠くからやってくる縁がある。視野を広げよ。", money:"変化を恐れずに新しい方向へ動くと吉。", health:"風通しの良い環境が健康に良い。外に出よ。", work:"フットワーク軽く動く人が成功をつかむ。" }, stats:{ love:3, money:3, health:3, work:3 }, lucky:{ action:"窓を全開にして深呼吸する", item:"風鈴", color:"白" }, boostSpot:{ name:"江の島 頂上展望台", type:"旅運・フットワーク軽化スポット", lat:35.3002, lng:139.4816, message:"湘南の風が一番強く吹く場所。風のように軽やかになれるスポット。" },
+   lat:35.3100, lng:139.5200, image:null},
+
+  {id:72, name:"湘南砂かけ", rank:"C", location:"spot_beach", emoji:"🏝️",
+   description:"砂をかける妖怪。", fortune:{ overall:"末吉。油断禁物。思わぬ邪魔が入る可能性がある。", love:"邪魔が入りやすい時期。二人の時間を大切に守れ。", money:"想定外の出費に備えて余裕資金を確保せよ。", health:"砂ぼこり・花粉・PM2.5に注意。マスク着用吉。", work:"邪魔や横槍が入りやすい時期。根回しを忘れるな。" }, stats:{ love:2, money:1, health:2, work:2 }, lucky:{ action:"砂浜でお祓いの儀式（砂を払う仕草）", item:"塩・お守り", color:"砂色" }, boostSpot:{ name:"由比ヶ浜 西端", type:"厄払い・防御スポット", lat:35.3148, lng:139.5482, message:"砂かけ妖怪が出没するとされる浜の西端。厄を払い去る力がある。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:73, name:"鎌倉こだま", rank:"C", location:"spot_forest", emoji:"🌲",
+   description:"森のこだま。", fortune:{ overall:"吉。声を大切に。言葉が運命を変える力を持っている。", love:"言葉で想いを伝えることが縁を育てる。", money:"発信すること・声を上げることがビジネスを生む。", health:"歌う・声を出すことがストレス解消になる。", work:"アイデアを声に出すことで実現の道が開ける。" }, stats:{ love:3, money:3, health:3, work:3 }, lucky:{ action:"好きな歌を歌う・声に出して読む", item:"鈴・ベル", color:"緑" }, boostSpot:{ name:"鎌倉 天園ハイキングコース", type:"声運・発信力アップスポット", lat:35.3290, lng:139.5580, message:"こだまが響く深い谷。大声で願いを叫ぶと叶うといわれる。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:74, name:"鎌倉いたずら狐", rank:"C", location:"spot_forest", emoji:"🦊",
+   description:"いたずら好きの狐。", fortune:{ overall:"小吉。注意深く行動せよ。思わぬいたずらに遭遇するかも。", love:"冗談が行き過ぎると関係が壊れる。真剣さも見せよ。", money:"甘い話や冗談半分の投資には乗らないこと。", health:"遊びすぎによる疲労と怪我に注意。", work:"悪ふざけが信頼を損なう。節度ある言動を。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"ユーモアを持って人を笑わせる", item:"キツネのお面", color:"橙" }, boostSpot:{ name:"鎌倉 佐助稲荷神社 参道", type:"遊び心・ユーモア運スポット", lat:35.3240, lng:139.5400, message:"無数の鳥居が続く神秘的な参道。いたずら狐の加護を受けながら笑いを授かれる。" },
+   lat:35.3250, lng:139.5400, image:null},
+
+  {id:75, name:"湘南小波", rank:"C", location:"spot_shonan_sea", emoji:"〰️",
+   description:"小さな波の妖精。", fortune:{ overall:"小吉。のんびりと行くのが最良の方法。小さなことに幸せあり。", love:"小さなサプライズが相手を喜ばせる。", money:"少額でも継続した貯蓄が大きな財になる。", health:"軽い運動を習慣にすることで体が整う。", work:"小さな仕事を丁寧にこなすことが大きな評価につながる。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"小さなことに感謝する", item:"波模様の小物", color:"水色" }, boostSpot:{ name:"腰越海岸", type:"小幸福・日常運アップスポット", lat:35.3060, lng:139.4990, message:"穏やかな小波が続く浜。小さな幸せを愛でる心を育てる場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:76, name:"湘南潮いたずら", rank:"C", location:"spot_shonan_sea", emoji:"💧",
+   description:"潮で遊ぶ妖怪。", fortune:{ overall:"末吉。気をつけよ。潮の満ち引きのように予想外の変化が来る。", love:"感情の波に飲まれないこと。冷静に対処せよ。", money:"衝動的な出費が資産を削る。感情で買わないこと。", health:"体調の波に乗れずバテやすい時期。休息を。", work:"感情的な判断が仕事上のミスにつながりやすい。" }, stats:{ love:2, money:1, health:2, work:2 }, lucky:{ action:"日記をつけて感情を整理する", item:"青い石", color:"海碧" }, boostSpot:{ name:"江の島 波打ち際", type:"感情安定・浄化スポット", lat:35.2988, lng:139.4798, message:"波が打ち寄せては引いていく場所。感情の波を静める浄化の地。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:77, name:"鎌倉石ころ妖怪", rank:"C", location:"spot_kamakura", emoji:"🪨",
+   description:"石ころの精。", fortune:{ overall:"小吉。足元注意。小さなことを疎かにすると躓く。", love:"細かい心遣いが相手との関係を安定させる。", money:"細かい収支管理が財運安定の鍵。", health:"足腰の状態を確認せよ。転倒注意。", work:"小さなミスが積み重なると大きなトラブルになる。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"足元を見ながらゆっくり歩く", item:"好みの小石", color:"グレー" }, boostSpot:{ name:"鎌倉 銭洗弁財天 参道", type:"足元確認・着実運スポット", lat:35.3273, lng:139.5416, message:"石段が続く参道。一歩一歩を大切にする心を養う場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:78, name:"鎌倉小影", rank:"C", location:"spot_kamakura", emoji:"👤",
+   description:"小さな影霊。", fortune:{ overall:"末吉。慎重に。人の影に隠れた動きに注意。", love:"陰口や噂に注意。正面から向き合う勇気を。", money:"見えないところでの資産流出に気をつけよ。", health:"心の影（精神的ストレス）が体に出やすい時期。", work:"影の仕事・縁の下の力持ちとしての頑張りが評価される。" }, stats:{ love:2, money:2, health:2, work:3 }, lucky:{ action:"日当たりの良い場所に出かける", item:"小さな鏡", color:"銀" }, boostSpot:{ name:"光明寺 境内", type:"陰陽バランス・浄化スポット", lat:35.3130, lng:139.5610, message:"光の明という名の寺。影を光に変える力をもらえる場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:79, name:"湘南泡妖怪", rank:"C", location:"spot_shonan_sea", emoji:"🫧",
+   description:"海の泡の妖怪。", fortune:{ overall:"小吉。軽やかに、泡のように軽くなると運気が上がる。", love:"重くなりすぎない関係が長続きの秘訣。", money:"重い荷物（借金・固定費）を軽くする努力を。", health:"炭酸水・温泉が体を癒す。泡のある場所へ。", work:"気持ちを軽くして仕事に臨むことで能率が上がる。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"炭酸ドリンクや温泉に入る", item:"シャボン玉", color:"透明" }, boostSpot:{ name:"江の島 弁天橋", type:"軽運・身軽スポット", lat:35.2997, lng:139.4848, message:"橋の上で海風を受けると、心が軽くなる。荷を下ろしに来る場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:80, name:"鎌倉小猫霊", rank:"C", location:"spot_kamakura", emoji:"🐾",
+   description:"小さな猫の霊。", fortune:{ overall:"吉。小さな癒しが毎日に訪れる。ペットや動物と縁がある。", love:"甘えることができる関係が育まれている。", money:"小さな節約・ポイント積み立てが幸運につながる。", health:"動物と触れ合うことが心身の癒しになる。", work:"小さな成功体験を積み重ねることが自信になる。" }, stats:{ love:3, money:2, health:3, work:2 }, lucky:{ action:"ペットや動物と触れ合う", item:"肉球モチーフ", color:"クリーム" }, boostSpot:{ name:"鎌倉市内 野良猫スポット", type:"癒し・小幸運スポット", lat:35.3219, lng:139.5450, message:"鎌倉のあちこちに現れる猫たち。小猫霊の癒しエネルギーが満ちる場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:81, name:"湘南小カニ妖怪", rank:"C", location:"spot_beach", emoji:"🦀",
+   description:"浜辺のカニ妖怪。", fortune:{ overall:"小吉。横道注意。遠回りに見えても正面突破が最善。", love:"横恋慕・割り込みに注意。正々堂々と向き合え。", money:"横からのリスク（詐欺・横流し）に注意。", health:"関節・横向き姿勢に注意。正しい姿勢を心がけよ。", work:"横道にそれず、目標に向かって真っすぐ進め。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"真っすぐな道を歩く", item:"カニモチーフ", color:"赤" }, boostSpot:{ name:"由比ヶ浜 磯遊びエリア", type:"方向修正・正直運スポット", lat:35.3148, lng:139.5488, message:"カニが横歩きする磯。あえて真っすぐ進む決意を固める場所。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:82, name:"湘南ヒトデ妖怪", rank:"C", location:"spot_beach", emoji:"⭐",
+   description:"ヒトデの妖精。", fortune:{ overall:"吉。小さな幸運が五方向から集まってくる。", love:"複数の縁が同時に動き出す兆し。大切にせよ。", money:"複数の収入源が同時に動き出す好機。", health:"全身のバランスを整えることが健康の秘訣。", work:"多方面での評価が同時に高まる時期。" }, stats:{ love:3, money:3, health:3, work:3 }, lucky:{ action:"五つのことに感謝を書き出す", item:"ヒトデモチーフ", color:"ピンク" }, boostSpot:{ name:"稲村ヶ崎 磯場", type:"全方位運・複合運アップスポット", lat:35.3027, lng:139.5258, message:"ヒトデが多く集まる磯。五方位からの幸運を集める場所。" },
+   lat:35.3100, lng:139.5300, image:null},
+
+  {id:83, name:"湘南小クラゲ", rank:"C", location:"spot_shonan_sea", emoji:"🪼",
+   description:"小クラゲ妖怪。", fortune:{ overall:"末吉。慎重に。刺されないよう（傷つかないよう）注意。", love:"感情的に傷つきやすい時期。自分の心を守れ。", money:"痛い出費が続く暗示。守りを固める時期。", health:"皮膚・肌のトラブルに注意。紫外線対策を。", work:"批判や否定的な言葉に傷つきやすい時。心の準備を。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"防御を意識した行動（日焼け止め等）", item:"クリスタル（防護）", color:"透明" }, boostSpot:{ name:"七里ヶ浜 ライフセービング前", type:"自己防護・安全スポット", lat:35.3048, lng:139.5148, message:"ライフセーバーが守るこの浜。自分を守る意識を高める場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:84, name:"鎌倉小烏", rank:"C", location:"spot_kamakura", emoji:"🐦",
+   description:"小さな烏妖怪。", fortune:{ overall:"小吉。観察し、学ぶことが今の最善の行動。", love:"相手の小さな行動から気持ちを読み取れ。", money:"成功者の行動を観察し、真似ることが吉。", health:"生活習慣を観察し、改善点を見つけよ。", work:"上司や先輩の仕事の仕方を真剣に観察・学習せよ。" }, stats:{ love:2, money:2, health:2, work:3 }, lucky:{ action:"尊敬する人の行動を観察・真似る", item:"羽根", color:"黒" }, boostSpot:{ name:"鶴岡八幡宮 大銀杏前", type:"観察・学習運スポット", lat:35.3253, lng:139.5558, message:"烏が多く集まる八幡宮の境内。観察力と学習力を授かれる場所。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:85, name:"湘南小魚", rank:"C", location:"spot_shonan_sea", emoji:"🐠",
+   description:"魚の妖精。", fortune:{ overall:"吉。小さな成功を積み重ねることで大きな魚になれる。", love:"小さな幸せを大切にすることが長続きの秘訣。", money:"小さな収入を大切にすることが富につながる。", health:"魚料理を食べると健康運が上昇する。", work:"小さな仕事を丁寧にこなすことで大きな仕事が来る。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"魚料理を作る・食べる", item:"魚モチーフ", color:"青" }, boostSpot:{ name:"小坪漁港", type:"成長運・育成スポット", lat:35.3108, lng:139.5650, message:"新鮮な魚が水揚げされる港。小さな命を大切にする心を学ぶ場所。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:86, name:"湘南潮小僧", rank:"C", location:"spot_shonan_sea", emoji:"🌊",
+   description:"潮の小妖怪。", fortune:{ overall:"小吉。焦らず潮を待て。時が来れば自然と流れが変わる。", love:"タイミングを待つことが最良の恋愛戦略。", money:"投資のタイミングを焦らず待つことが利益を生む。", health:"体調の波に合わせた行動が健康を守る。", work:"タイミングを読む力が仕事の成否を分ける。" }, stats:{ love:2, money:3, health:2, work:3 }, lucky:{ action:"干潮・満潮の時刻を調べて行動する", item:"潮時表・カレンダー", color:"藍" }, boostSpot:{ name:"江の島 岩屋 満潮時", type:"タイミング・潮時運スポット", lat:35.2976, lng:139.4779, message:"満潮時に海水が満ちる洞窟。自然のリズムと同調すると運気が上がる。" },
+   lat:35.3050, lng:139.5000, image:null},
+
+  {id:87, name:"鎌倉小鬼", rank:"C", location:"spot_kamakura", emoji:"👹",
+   description:"小さな鬼。", fortune:{ overall:"末吉。怒り・感情的な行動に注意。心の鬼を制せよ。", love:"感情的な言い争いが関係を壊す。冷静に。", money:"怒りにまかせた行動（衝動買い等）が損失を生む。", health:"怒りやストレスが体を蝕む。発散法を持て。", work:"感情的な発言が職場の信頼を失わせる。冷静に。" }, stats:{ love:2, money:2, health:2, work:2 }, lucky:{ action:"腹式呼吸・瞑想でリラックス", item:"節分の豆", color:"赤" }, boostSpot:{ name:"鎌倉宮（大塔宮）", type:"怒り鎮め・心穏やかスポット", lat:35.3219, lng:139.5531, message:"護良親王を祀るこの地で参拝すると、心の鬼が鎮まるといわれる。" },
+   lat:35.3219, lng:139.5467, image:null},
+
+  {id:88, name:"湘南砂小僧", rank:"C", location:"spot_beach", emoji:"🏄",
+   description:"砂浜の妖怪。", fortune:{ overall:"小吉。気楽に進め。重く考えすぎると砂に足を取られる。", love:"気軽な付き合いから深い縁に発展することがある。", money:"気軽な副業・ちょっとした収入が積み重なる。", health:"砂浜でリラックスすることが心身を癒す。", work:"気楽な気持ちで取り組む仕事ほどうまくいく。" }, stats:{ love:2, money:2, health:3, work:2 }, lucky:{ action:"砂浜で寝転んでリラックス", item:"ビーチサンダル", color:"黄" }, boostSpot:{ name:"七里ヶ浜 夏の浜", type:"リラックス・気楽運スポット", lat:35.3048, lng:139.5140, message:"砂小僧が遊ぶ七里ヶ浜。重い荷物を下ろして気楽になれる場所。" },
+   lat:35.3100, lng:139.5300, image:null}
+];
+
+// =============================================
+// ⑨ DOM Cache  (DOMアクセス削減)
+// =============================================
+const DOM = {
+  drawBtn:        () => document.getElementById('drawBtn'),
+  drawHint:       () => document.getElementById('drawHint'),
+  resultArea:     () => document.getElementById('resultArea'),
+  chipRemaining:  () => document.getElementById('chipRemaining'),
+  chipBook:       () => document.getElementById('chipBook'),
+  bookFound:      () => document.getElementById('bookFound'),
+  progressFill:   () => document.getElementById('progressBarFill'),
+  progressPct:    () => document.getElementById('progressPct'),
+  bookGrid:       () => document.getElementById('bookGrid'),
+  toastWrap:      () => document.getElementById('toastWrap'),
+  adminOverlay:   () => document.getElementById('adminOverlay'),
+  adminStats:     () => document.getElementById('adminStats'),
+  popularList:    () => document.getElementById('popularList'),
+  adminGrid:      () => document.getElementById('adminYokaiGrid'),
+  adminModal:     () => document.getElementById('adminModal'),
+};
+
+// =============================================
+// Toast
+// =============================================
+function toast(msg, duration = 3000) {
+  const wrap = DOM.toastWrap();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut 0.35s ease forwards';
+    setTimeout(() => el.remove(), 350);
+  }, duration);
+}
+
+// =============================================
+// Main App
+// =============================================
+const App = {
+  yokaiList: [],
+  gmap: null,
+
+  async init() {
+    this._loadYokai();
+    this._updateUI();
+    this._renderBook();
+    this._checkSharedResult();
+    this._setupEvents();
+    console.log('✅ App initialized — yokai count:', this.yokaiList.length);
+  },
+
+  _loadYokai() {
+    const saved = Storage.get('yokaiData');
+    this.yokaiList = (saved && saved.length > 0) ? saved : DEFAULT_YOKAI;
+  },
+
+  _saveYokai() { Storage.set('yokaiData', this.yokaiList); },
+
+  // ========== Draw ==========
+  async handleDraw() {
+    // ④ 1日1回制限チェック
+    if (!DailyLimit.canDraw()) {
+      this._showCooldown();
+      return;
+    }
+
+    const btn = DOM.drawBtn();
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>占い中…';
+    DOM.drawHint().textContent = '守護神を呼び出しています…';
+
+    let spotId = 'kamakura';
+
+    // ⑥ GPS + Haversine
+    try {
+      const coords = await GPS.getCurrentPosition();
+      spotId = GPS.detectSpot(coords.latitude, coords.longitude);
+      const spotName = SPOTS.find(s => s.id === spotId)?.name || '鎌倉';
+      DOM.drawHint().textContent = `📍 ${spotName} で占います`;
+    } catch(e) {
+      // ⑧ エラーハンドリング: GPS失敗 → 全体から抽選
+      DOM.drawHint().textContent = '位置情報なし — 鎌倉全体から占います';
+      console.warn('[GPS]', e.message);
+    }
+
+    // ⑦ 確率テーブルで抽選
+    const result = Omikuji.draw(this.yokaiList, spotId);
+
+    if (!result) {
+      // ⑧ エラーハンドリング: 妖怪が見つからない
+      this._showError('妖怪データが見つかりませんでした');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="btn-icon">御</span>おみくじを引く';
+      return;
+    }
+
+    // 消費・記録
+    DailyLimit.consume();
+    const isNew = Book.add(result.id);
+    Stats.record(result.id);
+
+    // UI更新
+    this._showResult(result, isNew);
+    this._updateUI();
+    this._renderBook();
+    this._generateQR(result);
+
+    // ④ Map連動 — boostSpotがあればそこへ、なければ妖怪のlatへ
+    if (this.gmap) {
+      const spot = result.boostSpot;
+      const lat = spot?.lat ?? result.lat;
+      const lng = spot?.lng ?? result.lng;
+      if (lat && lng) {
+        this.gmap.panTo({ lat, lng });
+        this.gmap.setZoom(16);
+      }
+    }
+
+    if (isNew) toast(`✨ 新発見！ ${result.name} を図鑑に登録しました`);
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-icon">御</span>おみくじを引く';
+    DOM.drawHint().textContent = `本日残り ${DailyLimit.getRemaining()} 回`;
+  },
+
+  // ========== UI Updates ==========
+  _updateUI() {
+    const remaining = DailyLimit.getRemaining();
+    const chip = DOM.chipRemaining();
+    chip.textContent = `本日残り ${remaining} 回`;
+    chip.className = 'status-chip remaining' +
+      (remaining <= 0 ? ' empty' : remaining <= 3 ? ' warn' : '');
+
+    const found = Book.count();
+    DOM.chipBook().textContent = `図鑑 ${found} / ${this.yokaiList.length}`;
+
+    // ⑤ 図鑑達成率
+    DOM.bookFound().textContent = found;
+    const pct = this.yokaiList.length ? Math.round(found / this.yokaiList.length * 100) : 0;
+    DOM.progressFill().style.width = pct + '%';
+    DOM.progressPct().textContent = `達成率 ${pct}%`;
+  },
+
+  // ========== Fortune Helpers ==========
+  _stars(n) {
+    const filled = '★'.repeat(Math.max(0, Math.min(5, n)));
+    const empty  = '☆'.repeat(5 - Math.max(0, Math.min(5, n)));
+    return `<span class="star-filled">${filled}</span><span class="star-empty">${empty}</span>`;
+  },
+
+  _fortuneLabel(n) {
+    return ['','末吉','小吉','中吉','吉','大吉'][Math.min(5,Math.max(1,n))];
+  },
+
+  // ========== Result Display ==========
+  _showResult(y, isNew) {
+    const area = DOM.resultArea();
+    area.classList.remove('show');
+    void area.offsetWidth;
+
+    const imgHtml = y.image
+      ? `<img src="${y.image}" class="result-image" alt="${y.name}">`
+      : `<span class="result-emoji">${y.emoji || '👻'}</span>`;
+
+    const newBadge = isNew ? `<span class="result-new-badge">NEW</span>` : '';
+
+    // ① fortune オブジェクト対応（旧string形式もフォールバック）
+    const fortune = (y.fortune && typeof y.fortune === 'object') ? y.fortune : null;
+    const stats   = y.stats  || null;
+    const lucky   = y.lucky  || null;
+    const boost   = y.boostSpot || null;
+
+    const overallText = fortune ? fortune.overall : (y.fortune || '');
+
+    // 運勢詳細グリッド
+    const statsHtml = (fortune && stats) ? `
+      <div class="fortune-stats">
+        <div class="fortune-stat-item">
+          <span class="fortune-stat-label">💕 恋愛運</span>
+          <span class="fortune-stat-text">${fortune.love}</span>
+          <span class="fortune-stars">${this._stars(stats.love)}</span>
+        </div>
+        <div class="fortune-stat-item">
+          <span class="fortune-stat-label">💰 金運</span>
+          <span class="fortune-stat-text">${fortune.money}</span>
+          <span class="fortune-stars">${this._stars(stats.money)}</span>
+        </div>
+        <div class="fortune-stat-item">
+          <span class="fortune-stat-label">💪 健康運</span>
+          <span class="fortune-stat-text">${fortune.health}</span>
+          <span class="fortune-stars">${this._stars(stats.health)}</span>
+        </div>
+        <div class="fortune-stat-item">
+          <span class="fortune-stat-label">💼 仕事運</span>
+          <span class="fortune-stat-text">${fortune.work}</span>
+          <span class="fortune-stars">${this._stars(stats.work)}</span>
+        </div>
+      </div>` : '';
+
+    // ラッキー3点
+    const luckyHtml = lucky ? `
+      <div class="fortune-lucky">
+        <span class="lucky-chip"><span class="lucky-icon">🎯</span>${lucky.action}</span>
+        <span class="lucky-chip"><span class="lucky-icon">✨</span>${lucky.item}</span>
+        <span class="lucky-chip"><span class="lucky-icon">🎨</span>${lucky.color}</span>
+      </div>` : '';
+
+    // ② おすすめスポットカード
+    const boostHtml = boost ? `
+      <div class="boost-spot-card" id="boostSpotCard"
+           data-lat="${boost.lat}" data-lng="${boost.lng}">
+        <span class="boost-spot-pin">📍</span>
+        <div class="boost-spot-body">
+          <span class="boost-spot-type">${boost.type}</span>
+          <span class="boost-spot-name">${boost.name}</span>
+          <span class="boost-spot-msg">${boost.message}</span>
+          <span class="boost-spot-hint">タップしてマップで確認 →</span>
+        </div>
+      </div>` : '';
+
+    // ⑧ UXアクションバー
+    const shareText = encodeURIComponent(
+      `${y.name}（RANK ${y.rank}）\n総合運：${overallText}\n${boost ? `おすすめスポット：${boost.name}` : ''}\n#鎌倉妖怪守護神おみくじ`
+    );
+    const xUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+
+    const actionHtml = `
+      <div class="action-bar">
+        ${boost ? `<button class="action-btn action-btn-spot" id="goSpotBtn">🗺 スポットへ行く</button>` : ''}
+        <button class="action-btn action-btn-x" onclick="window.open('${xUrl}','_blank')">𝕏 ポスト</button>
+        <button class="action-btn action-btn-share" id="shareResultBtn">📤 シェア</button>
+      </div>`;
+
+    area.innerHTML = `
+      <div class="result-card">
+        ${imgHtml}
+        <div class="result-rank-badge rank-${y.rank}">RANK ${y.rank}</div>
+        <div class="result-name">${y.name}${newBadge}</div>
+        <p class="result-desc">${y.description}</p>
+
+        <div class="fortune-overall">総合運 ── ${overallText}</div>
+
+        ${statsHtml}
+        ${luckyHtml}
+        ${boostHtml}
+        ${actionHtml}
+
+        <div class="result-location" style="margin-top:16px">
+          発見スポット : ${this._locationName(y.location)}
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-title">この結果をスキャンしてシェア</div>
+          <div id="qrcode"></div>
+        </div>
+      </div>`;
+
+    area.classList.add('show');
+
+    // boostSpotカードのタップ → マップ移動
+    const boostCard = document.getElementById('boostSpotCard');
+    if (boostCard && this.gmap) {
+      boostCard.addEventListener('click', () => {
+        const lat = parseFloat(boostCard.dataset.lat);
+        const lng = parseFloat(boostCard.dataset.lng);
+        this.gmap.panTo({ lat, lng });
+        this.gmap.setZoom(17);
+        document.getElementById('map')?.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    }
+
+    // スポットへ行くボタン → Google Maps アプリ
+    const goBtn = document.getElementById('goSpotBtn');
+    if (goBtn && boost) {
+      goBtn.addEventListener('click', () => {
+        window.open(
+          `https://www.google.com/maps/dir/?api=1&destination=${boost.lat},${boost.lng}&travelmode=walking`,
+          '_blank'
+        );
+      });
+    }
+
+    // シェアボタン → Web Share API or QRスクロール
+    const shareBtn = document.getElementById('shareResultBtn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        const text = `${y.name}（RANK ${y.rank}）\n総合運：${overallText}\n${boost ? `おすすめスポット：${boost.name}` : ''}\n#鎌倉妖怪守護神おみくじ`;
+        if (navigator.share) {
+          navigator.share({ title:'鎌倉妖怪守護神おみくじ', text }).catch(() => {});
+        } else {
+          document.getElementById('qrcode')?.scrollIntoView({ behavior:'smooth' });
+        }
+      });
+    }
+  },
+
+  _showCooldown() {
+    const area = DOM.resultArea();
+    area.innerHTML = `
+      <div class="msg-box cooldown">
+        <span class="msg-icon">⏰</span>
+        <div class="msg-title">本日の占いは終わりました</div>
+        <div class="msg-sub">また明日お越しください</div>
+      </div>`;
+    area.classList.add('show');
+  },
+
+  _showError(msg) {
+    const area = DOM.resultArea();
+    area.innerHTML = `
+      <div class="msg-box error">
+        <span class="msg-icon">⚠️</span>
+        <div class="msg-title">${msg}</div>
+        <div class="msg-sub">もう一度お試しください</div>
+      </div>`;
+    area.classList.add('show');
+  },
+
+  // ========== Book ==========
+  _renderBook() {
+    const grid = DOM.bookGrid();
+    const bookData = Book.getAll();
+    const RANK_COLOR = { SS:'#c9972a', S:'#7b7bb5', A:'#2e7d52', B:'#2c7aaa', C:'#7a7a7a' };
+
+    grid.innerHTML = this.yokaiList.map(y => {
+      const found = bookData[y.id];
+      const overall = (y.fortune && typeof y.fortune === 'object') ? y.fortune.overall : (y.fortune || '');
+      if (found) {
+        return `<div class="book-card found" data-id="${y.id}" title="${y.name}\n${overall}">
+          <span class="card-emoji">${y.image ? '🖼' : (y.emoji||'👻')}</span>
+          <div class="card-name">${y.name}</div>
+          <span class="card-rank-dot" style="background:${RANK_COLOR[y.rank]||'#888'}"></span>
+          <span class="card-found-date">${found.date}</span>
+        </div>`;
+      } else {
+        return `<div class="book-card locked" title="未発見">
+          <span class="card-emoji">❓</span>
+          <div class="card-name">？？？</div>
+        </div>`;
+      }
+    }).join('');
+  },
+
+  // ========== QR Code (⑤ 強化シェアデータ) ==========
+  _generateQR(y) {
+    const qrEl = document.getElementById('qrcode');
+    if (!qrEl) return;
+    qrEl.innerHTML = '';
+    try {
+      const fortune = (y.fortune && typeof y.fortune === 'object') ? y.fortune : null;
+      const shareData = {
+        id:      y.id,
+        name:    y.name,
+        emoji:   y.emoji,
+        rank:    y.rank,
+        overall: fortune ? fortune.overall : (y.fortune || ''),
+        love:    fortune?.love    || '',
+        spot:    y.boostSpot?.name || '',
+        spotType:y.boostSpot?.type || '',
+      };
+      const url = `${location.href.split('?')[0]}?result=${encodeURIComponent(JSON.stringify(shareData))}`;
+      new QRCode(qrEl, { text: url, width: 160, height: 160,
+        colorDark:'#1a1008', colorLight:'#f5efe0', correctLevel: QRCode.CorrectLevel.H });
+    } catch(e) { console.warn('QRCode生成失敗', e); }
+  },
+
+  // ========== Shared Result ==========
+  _checkSharedResult() {
+    const p = new URLSearchParams(location.search).get('result');
+    if (!p) return;
+    try {
+      const y = JSON.parse(decodeURIComponent(p));
+      const area = DOM.resultArea();
+
+      const spotHtml = y.spot ? `
+        <div class="boost-spot-card" style="cursor:default;margin-top:16px">
+          <span class="boost-spot-pin">📍</span>
+          <div class="boost-spot-body">
+            <span class="boost-spot-type">${y.spotType || 'おすすめスポット'}</span>
+            <span class="boost-spot-name">${y.spot}</span>
+          </div>
+        </div>` : '';
+
+      const loveHtml = y.love ? `
+        <div class="fortune-stat-item" style="margin-top:12px;text-align:left;padding:10px 14px;background:rgba(245,239,224,0.04);border:1px solid rgba(245,239,224,0.08);border-radius:10px">
+          <span class="fortune-stat-label">💕 恋愛運</span>
+          <span class="fortune-stat-text">${y.love}</span>
+        </div>` : '';
+
+      area.innerHTML = `
+        <div class="shared-banner">👥 友達からシェアされた占い結果</div>
+        <div class="result-card">
+          <span class="result-emoji">${y.emoji||'👻'}</span>
+          <div class="result-rank-badge rank-${y.rank}">RANK ${y.rank}</div>
+          <div class="result-name">${y.name}</div>
+          <div class="fortune-overall">総合運 ── ${y.overall || ''}</div>
+          ${loveHtml}
+          ${spotHtml}
+          <p class="result-desc" style="margin-top:20px;color:rgba(245,239,224,0.4)">
+            あなたもおみくじを引いてみよう！
+          </p>
+        </div>`;
+      area.classList.add('show');
+    } catch(e) { console.warn('共有データ読み込み失敗', e); }
+  },
+
+  // ========== Event Setup ==========
+  _setupEvents() {
+    // ⑨ event delegation
+    DOM.drawBtn().addEventListener('click', () => this.handleDraw());
+
+    // ロック画面のイベント設定
+    Lock.setupEvents();
+
+    document.getElementById('adminFab').addEventListener('click', e => {
+      e.preventDefault();
+      Admin.open();
+    });
+
+    document.getElementById('adminCloseBtn').addEventListener('click', () => Admin.close());
+    document.getElementById('adminAddBtn').addEventListener('click', () => Admin.openModal());
+    document.getElementById('modalCloseBtn').addEventListener('click', () => Admin.closeModal());
+
+  },
+
+  _locationName(id) {
+    return SPOTS.find(s => s.id === id)?.name || id;
+  }
+};
+
+// =============================================
+// Lock / Auth
+// =============================================
+const Lock = {
+  // ★ パスワードをここで設定してください ★
+  PASSWORD: 'kamakura2026',
+
+  // セッション中のみ認証を保持（ページ再読み込みでリセット）
+  _unlocked: false,
+
+  check(input) { return input === this.PASSWORD; },
+  isUnlocked() { return this._unlocked; },
+  unlock()     { this._unlocked = true; },
+  lock()       { this._unlocked = false; },
+
+  showScreen() {
+    const screen = document.getElementById('lockScreen');
+    const input  = document.getElementById('lockInput');
+    const errMsg = document.getElementById('lockError');
+    screen.classList.add('show');
+    errMsg.textContent = '';
+    input.value = '';
+    setTimeout(() => input.focus(), 100);
+  },
+
+  hideScreen() {
+    document.getElementById('lockScreen').classList.remove('show');
+  },
+
+  setupEvents() {
+    const input  = document.getElementById('lockInput');
+    const submit = document.getElementById('lockSubmit');
+    const cancel = document.getElementById('lockCancel');
+    const toggle = document.getElementById('lockToggle');
+
+    // Enterキーで送信
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') this._attempt(); });
+    submit.addEventListener('click', () => this._attempt());
+    cancel.addEventListener('click', () => this.hideScreen());
+
+    // パスワード表示トグル
+    toggle.addEventListener('click', () => {
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      toggle.textContent = isPass ? '🙈' : '👁';
+    });
+  },
+
+  _attempt() {
+    const input  = document.getElementById('lockInput');
+    const errMsg = document.getElementById('lockError');
+    const val    = input.value;
+
+    if (this.check(val)) {
+      this.unlock();
+      this.hideScreen();
+      Admin._openPanel();
+      input.value = '';
+    } else {
+      errMsg.textContent = 'パスワードが違います';
+      input.classList.add('error');
+      input.value = '';
+      setTimeout(() => input.classList.remove('error'), 500);
+      input.focus();
+    }
+  }
+};
+
+// =============================================
+// Admin Module
+// =============================================
+const Admin = {
+  open() {
+    if (Lock.isUnlocked()) {
+      this._openPanel();
+    } else {
+      Lock.showScreen();
+    }
+  },
+
+  _devReady: false,
+
+  _openPanel() {
+    DOM.adminOverlay().classList.add('show');
+    this._renderStats();
+    this._renderPopular();
+    this._renderGrid();
+
+    // DEVボタンのリスナーは初回のみ登録
+    if (!this._devReady) {
+      this._devReady = true;
+      document.getElementById('devReset').addEventListener('click', () => {
+        DailyLimit.reset();
+        App._updateUI();
+        this._renderStats();
+        toast('✅ 利用制限をリセットしました');
+      });
+      document.getElementById('devClearBook').addEventListener('click', () => {
+        if (!confirm('図鑑データを消去しますか？')) return;
+        Book.clear();
+        App._updateUI();
+        App._renderBook();
+        this._renderStats();
+        toast('🗑 図鑑をクリアしました');
+      });
+      document.getElementById('devClearStats').addEventListener('click', () => {
+        if (!confirm('統計データを消去しますか？')) return;
+        Stats.clear();
+        this._renderStats();
+        this._renderPopular();
+        toast('🗑 統計をクリアしました');
+      });
+    }
+  },
+
+  close() {
+    DOM.adminOverlay().classList.remove('show');
+    Lock.lock(); // 閉じたら再ロック（セキュリティ強化）
+  },
+
+  // ⑩ 統計表示
+  _renderStats() {
+    const total = Stats.getTotal();
+    const bookCount = Book.count();
+    const total88 = App.yokaiList.length;
+    const pct = total88 ? Math.round(bookCount / total88 * 100) : 0;
+
+    const daily = Stats.getDaily();
+    const todayKey = new Date().toLocaleDateString('ja-JP');
+    const todayCount = daily[todayKey] || 0;
+
+    DOM.adminStats().innerHTML = [
+      { val: total,      label: '累計おみくじ数' },
+      { val: `${bookCount}/${total88}`, label: '図鑑達成率' },
+      { val: pct + '%',  label: '平均達成率' },
+      { val: todayCount, label: '本日の利用数' },
+    ].map(s => `
+      <div class="stat-card">
+        <span class="stat-val">${s.val}</span>
+        <div class="stat-label">${s.label}</div>
+      </div>`).join('');
+  },
+
+  _renderPopular() {
+    const top = Stats.getTop(5);
+    if (top.length === 0) {
+      DOM.popularList().innerHTML = '<p style="color:rgba(245,239,224,0.3);font-size:0.82rem;padding:10px">まだデータがありません</p>';
+      return;
+    }
+    DOM.popularList().innerHTML = top.map((t, i) => {
+      const y = App.yokaiList.find(x => x.id === t.id);
+      if (!y) return '';
+      return `<div class="popular-item">
+        <span class="pop-rank">${i+1}</span>
+        <span class="pop-emoji">${y.emoji||'👻'}</span>
+        <span class="pop-name">${y.name} <span style="font-size:0.75em;color:rgba(245,239,224,0.35)">RANK ${y.rank}</span></span>
+        <span class="pop-count">${t.count}回</span>
+      </div>`;
+    }).join('');
+  },
+
+  _renderGrid() {
+    const RANK_LABEL = { SS:'🥇SS', S:'🥈S', A:'🏅A', B:'B', C:'C' };
+    DOM.adminGrid().innerHTML = App.yokaiList.map(y => `
+      <div class="admin-card">
+        <div class="admin-card-preview">
+          ${y.image ? `<img src="${y.image}" alt="${y.name}">` : (y.emoji||'👻')}
+        </div>
+        <div class="admin-card-name">${y.name}</div>
+        <div class="admin-card-meta">
+          ${RANK_LABEL[y.rank]||y.rank} ／ ${SPOTS.find(s=>s.id===y.location)?.name||y.location}
+        </div>
+        <div class="admin-card-actions">
+          <button class="abtn abtn-success" onclick="Admin.openModal(${y.id})">✏ 編集</button>
+          <button class="abtn abtn-danger"  onclick="Admin.delete(${y.id})">🗑</button>
+        </div>
+      </div>`).join('');
+  },
+
+  openModal(id) {
+    const modal = DOM.adminModal();
+    this._resetForm();
+
+    if (id) {
+      const y = App.yokaiList.find(x => x.id === id);
+      if (!y) return;
+      document.getElementById('modalTitle').textContent = '妖怪を編集';
+      document.getElementById('fId').value    = y.id;
+      document.getElementById('fName').value  = y.name;
+      document.getElementById('fEmoji').value = y.emoji || '';
+      document.getElementById('fRank').value  = y.rank;
+      document.getElementById('fLocation').value = y.location;
+      document.getElementById('fDesc').value    = y.description;
+      document.getElementById('fFortune').value = (y.fortune && typeof y.fortune === 'object') ? y.fortune.overall : (y.fortune || '');
+      document.getElementById('fLat').value = y.lat || '';
+      document.getElementById('fLng').value = y.lng || '';
+      if (y.image) this._showPreview(y.image);
+    } else {
+      document.getElementById('modalTitle').textContent = '新しい妖怪を追加';
+    }
+    modal.classList.add('show');
+    this._setupImageDrop();
+  },
+
+  closeModal() {
+    DOM.adminModal().classList.remove('show');
+    this._resetForm();
+  },
+
+  save() {
+    const name = document.getElementById('fName').value.trim();
+    if (!name) { toast('⚠ 妖怪名を入力してください'); return; }
+
+    const idVal = document.getElementById('fId').value;
+    const entry = {
+      id:       idVal ? parseInt(idVal) : Date.now(),
+      name,
+      emoji:    document.getElementById('fEmoji').value,
+      rank:     document.getElementById('fRank').value,
+      location: document.getElementById('fLocation').value,
+      description: document.getElementById('fDesc').value,
+      fortune:  { overall: document.getElementById('fFortune').value, love:'', money:'', health:'', work:'' },
+      lat: parseFloat(document.getElementById('fLat').value) || null,
+      lng: parseFloat(document.getElementById('fLng').value) || null,
+      image:    document.getElementById('fImage').value || null,
+    };
+
+    const idx = App.yokaiList.findIndex(x => x.id === entry.id);
+    if (idx >= 0) {
+      App.yokaiList[idx] = entry;
+      toast('✅ 妖怪を更新しました');
+    } else {
+      App.yokaiList.push(entry);
+      toast('✅ 新しい妖怪を追加しました');
+    }
+
+    App._saveYokai();
+    App._updateUI();
+    App._renderBook();
+    this._renderGrid();
+    this._renderStats();
+    this.closeModal();
+  },
+
+  delete(id) {
+    const y = App.yokaiList.find(x => x.id === id);
+    if (!y || !confirm(`「${y.name}」を削除しますか？`)) return;
+    App.yokaiList = App.yokaiList.filter(x => x.id !== id);
+    App._saveYokai();
+    App._updateUI();
+    App._renderBook();
+    this._renderGrid();
+    toast(`🗑 ${y.name} を削除しました`);
+  },
+
+  _resetForm() {
+    ['fId','fName','fEmoji','fDesc','fFortune','fLat','fLng','fImage'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('fRank').value = 'A';
+    document.getElementById('fLocation').value = 'kamakura';
+    const preview = document.getElementById('imagePreview');
+    if (preview) { preview.style.display = 'none'; preview.src = ''; }
+    const acts = document.getElementById('imageActions');
+    if (acts) acts.style.display = 'none';
+    const drop = document.getElementById('imageDrop');
+    if (drop) {
+      drop.querySelector('.drop-icon').style.display = '';
+      drop.querySelector('.drop-hint').style.display = '';
+    }
+  },
+
+  _showPreview(src) {
+    const preview = document.getElementById('imagePreview');
+    preview.src = src;
+    preview.style.display = 'block';
+    document.getElementById('imageDrop').querySelector('.drop-icon').style.display = 'none';
+    document.getElementById('imageDrop').querySelector('.drop-hint').style.display = 'none';
+    document.getElementById('imageActions').style.display = 'flex';
+  },
+
+  _setupImageDrop() {
+    const area = document.getElementById('imageDrop');
+    const input = document.getElementById('imageInput');
+    if (area._ready) return;
+    area._ready = true;
+
+    area.addEventListener('click', () => {
+      if (!document.getElementById('imagePreview').style.display || document.getElementById('imagePreview').style.display === 'none') {
+        input.click();
+      }
+    });
+    input.addEventListener('change', e => {
+      if (e.target.files[0]) this._handleFile(e.target.files[0]);
+    });
+    area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('over'); });
+    area.addEventListener('dragleave', () => area.classList.remove('over'));
+    area.addEventListener('drop', e => {
+      e.preventDefault(); area.classList.remove('over');
+      const f = e.dataTransfer.files[0];
+      if (f?.type.startsWith('image/')) this._handleFile(f);
+    });
+  },
+
+  _handleFile(file) {
+    if (file.size > 5 * 1024 * 1024) { toast('⚠ 5MB以下の画像を選択してください'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('fImage').value = e.target.result;
+      this._showPreview(e.target.result);
+      toast('✅ 画像をアップロードしました');
+    };
+    reader.readAsDataURL(file);
+  },
+
+  changeImage() { document.getElementById('imageInput').click(); },
+
+  removeImage() {
+    if (!confirm('画像を削除しますか？')) return;
+    document.getElementById('fImage').value = '';
+    this._resetForm();
+    const el = document.getElementById('fName');
+    // preserve existing values
+    const vals = {};
+    ['fName','fEmoji','fRank','fLocation','fDesc','fFortune','fLat','fLng'].forEach(id => {
+      vals[id] = document.getElementById(id).value;
+    });
+    Object.entries(vals).forEach(([id, v]) => { document.getElementById(id).value = v; });
+    toast('🗑 画像を削除しました');
+  }
+};
+
+// =============================================
+// Google Maps
+// =============================================
+window.initMap = function() {
+  try {
+    const mapEl = document.getElementById('map');
+    const gmap = new google.maps.Map(mapEl, {
+      zoom: 12,
+      center: { lat: 35.319, lng: 139.546 },
+      mapTypeId: 'roadmap',
+      styles: [
+        { featureType:'all', elementType:'labels.text.fill', stylers:[{ color:'#c9972a' }] },
+        { featureType:'water', elementType:'geometry', stylers:[{ color:'#0e1e38' }] },
+        { featureType:'landscape', elementType:'geometry', stylers:[{ color:'#1a1008' }] },
+        { featureType:'road', elementType:'geometry', stylers:[{ color:'#2a1a0a' }] },
+        { featureType:'poi', elementType:'geometry', stylers:[{ color:'#1f1208' }] },
+      ]
+    });
+    App.gmap = gmap;
+
+    SPOTS.forEach(s => {
+      const y = App.yokaiList.find(y => y.location === s.id);
+      new google.maps.Marker({
+        position: { lat: s.lat, lng: s.lng },
+        map: gmap,
+        title: s.name,
+        label: { text: y?.emoji || '⛩', fontSize: '18px' }
+      });
+    });
+  } catch(e) {
+    console.warn('Maps初期化失敗', e);
+    document.getElementById('map').style.display = 'none';
+  }
+};
+
+window.gm_authFailure = () => { document.getElementById('map').style.display = 'none'; };
+
+// =============================================
+// Boot
+// =============================================
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"
+  onerror="document.getElementById('map').style.display='none'">
+</script>
+
+</body>
+</html>

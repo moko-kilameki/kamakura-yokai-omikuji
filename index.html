@@ -5,6 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>鎌倉妖怪守護神おみくじ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBg6TVHUs1_PPonn0a_wtY1nOfGqMvF564",
+  authDomain:        "kamakura-yokai-omikuji.firebaseapp.com",
+  projectId:         "kamakura-yokai-omikuji",
+  storageBucket:     "kamakura-yokai-omikuji.firebasestorage.app",
+  messagingSenderId: "879063650096",
+  appId:             "1:879063650096:web:06e419501569c40d8382f5",
+  measurementId:     "G-XK7FF8EQXH"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+// グローバルに公開（メインスクリプトから使用）
+window.__FB__ = { db, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer };
+console.log('✅ Firebase 初期化完了');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 
@@ -1906,34 +1929,91 @@ const Book = {
 };
 
 // =============================================
-// ⑥ Stats Module  (統計)
+// ⑥ Stats Module  (Firebase + LocalStorageハイブリッド)
+//    - record()    : Firestore へ書き込み（失敗時はLocalStorageのみ）
+//    - getTotal()  : Firestore の全件数（失敗時はLocal）
+//    - getTop()    : Firestore の人気ランキング（失敗時はLocal）
+//    - getDaily()  : LocalStorage の日別データ（端末内）
 // =============================================
 const Stats = {
   KEY: 'omikuji_stats',
 
-  _load() { return Storage.get(this.KEY, { total: 0, draws: {}, daily: {} }); },
-  _save(s) { Storage.set(this.KEY, s); },
+  _local() { return Storage.get(this.KEY, { total: 0, draws: {}, daily: {} }); },
+  _saveLocal(s) { Storage.set(this.KEY, s); },
 
-  record(yokaiId) {
-    const s = this._load();
+  // ローカルにも記録（オフライン時のフォールバック）
+  _recordLocal(yokaiId) {
+    const s = this._local();
     s.total = (s.total || 0) + 1;
-    s.draws[yokaiId] = (s.draws[yokaiId] || 0) + 1;
+    s.draws[String(yokaiId)] = (s.draws[String(yokaiId)] || 0) + 1;
     const today = new Date().toLocaleDateString('ja-JP');
     s.daily[today] = (s.daily[today] || 0) + 1;
-    this._save(s);
+    this._saveLocal(s);
   },
 
-  getTop(n = 5) {
-    const s = this._load();
-    return Object.entries(s.draws || {})
-      .sort((a,b) => b[1]-a[1])
-      .slice(0, n)
-      .map(([id, count]) => ({ id: Number(id), count }));
+  // Firestore + Local 両方に記録
+  async record(yokaiId, yokaiName, rank, location) {
+    this._recordLocal(yokaiId);
+    try {
+      const fb = window.__FB__;
+      if (!fb) return;
+      const { db, collection, addDoc } = fb;
+      await addDoc(collection(db, 'omikuji_logs'), {
+        yokaiId,
+        yokaiName,
+        rank,
+        location,
+        time: new Date().toISOString(),
+        date: new Date().toLocaleDateString('ja-JP')
+      });
+    } catch(e) {
+      console.warn('[Firebase] write失敗（ローカルに保存済み）:', e.message);
+    }
   },
 
-  getTotal() { return this._load().total || 0; },
+  // Firestore から累計件数を取得
+  async getTotal() {
+    try {
+      const fb = window.__FB__;
+      if (!fb) throw new Error('FB未初期化');
+      const { db, collection, getCountFromServer } = fb;
+      const snap = await getCountFromServer(collection(db, 'omikuji_logs'));
+      return snap.data().count;
+    } catch(e) {
+      console.warn('[Firebase] getTotal失敗:', e.message);
+      return this._local().total || 0;
+    }
+  },
 
-  getDaily() { return this._load().daily || {}; },
+  // Firestore から人気ランキングを取得
+  async getTop(n = 5) {
+    try {
+      const fb = window.__FB__;
+      if (!fb) throw new Error('FB未初期化');
+      const { db, collection, getDocs } = fb;
+      const snap = await getDocs(collection(db, 'omikuji_logs'));
+      const count = {};
+      snap.forEach(doc => {
+        const d = doc.data();
+        const key = String(d.yokaiId);
+        count[key] = (count[key] || 0) + 1;
+      });
+      return Object.entries(count)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .map(([id, c]) => ({ id: Number(id), count: c }));
+    } catch(e) {
+      console.warn('[Firebase] getTop失敗:', e.message);
+      const s = this._local();
+      return Object.entries(s.draws || {})
+        .sort((a,b) => b[1]-a[1])
+        .slice(0, n)
+        .map(([id, count]) => ({ id: Number(id), count }));
+    }
+  },
+
+  // 日別は LocalStorage から（端末内データ）
+  getDaily() { return this._local().daily || {}; },
 
   clear() { Storage.remove(this.KEY); }
 };
@@ -2612,7 +2692,7 @@ const App = {
     // 消費・記録
     DailyLimit.consume();
     const isNew = Book.add(result.id);
-    Stats.record(result.id);
+    Stats.record(result.id, result.name, result.rank, spotId);
 
     // UI更新
     this._showResult(result, isNew);
@@ -3074,30 +3154,41 @@ const Admin = {
   },
 
   // ⑩ 統計表示
-  _renderStats() {
-    const total = Stats.getTotal();
+  async _renderStats() {
     const bookCount = Book.count();
-    const total88 = App.yokaiList.length;
-    const pct = total88 ? Math.round(bookCount / total88 * 100) : 0;
-
-    const daily = Stats.getDaily();
-    const todayKey = new Date().toLocaleDateString('ja-JP');
+    const total88   = App.yokaiList.length;
+    const pct       = total88 ? Math.round(bookCount / total88 * 100) : 0;
+    const daily     = Stats.getDaily();
+    const todayKey  = new Date().toLocaleDateString('ja-JP');
     const todayCount = daily[todayKey] || 0;
 
-    DOM.adminStats().innerHTML = [
-      { val: total,      label: '累計おみくじ数' },
-      { val: `${bookCount}/${total88}`, label: '図鑑達成率' },
-      { val: pct + '%',  label: '平均達成率' },
-      { val: todayCount, label: '本日の利用数' },
-    ].map(s => `
-      <div class="stat-card">
-        <span class="stat-val">${s.val}</span>
-        <div class="stat-label">${s.label}</div>
-      </div>`).join('');
+    // まずローカル値で即描画
+    const statsEl = DOM.adminStats();
+    const render = (total) => {
+      statsEl.innerHTML = [
+        { val: total.toLocaleString(),        label: '累計おみくじ数（全ユーザー）' },
+        { val: `${bookCount}/${total88}`,      label: 'あなたの図鑑達成' },
+        { val: pct + '%',                      label: '達成率' },
+        { val: todayCount,                     label: '本日の利用数（端末）' },
+      ].map(s => `
+        <div class="stat-card">
+          <span class="stat-val">${s.val}</span>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('');
+    };
+
+    render(Stats._local().total || 0); // 即時表示
+
+    // Firebase から最新値を取得して更新
+    const fbTotal = await Stats.getTotal();
+    render(fbTotal);
   },
 
-  _renderPopular() {
-    const top = Stats.getTop(5);
+  async _renderPopular() {
+    DOM.popularList().innerHTML = '<p style="color:rgba(245,239,224,0.3);font-size:0.82rem;padding:10px">読み込み中…</p>';
+
+    const top = await Stats.getTop(5);
+
     if (top.length === 0) {
       DOM.popularList().innerHTML = '<p style="color:rgba(245,239,224,0.3);font-size:0.82rem;padding:10px">まだデータがありません</p>';
       return;

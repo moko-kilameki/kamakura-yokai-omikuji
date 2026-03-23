@@ -1236,8 +1236,46 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
    Responsive
    ============================================= */
 /* =============================================
-   Site Footer
+   Log Table
    ============================================= */
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  color: rgba(245,239,224,0.75);
+  min-width: 520px;
+}
+
+.log-table th {
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  color: rgba(201,151,42,0.8);
+  letter-spacing: 0.1em;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(201,151,42,0.25);
+  text-align: left;
+  white-space: nowrap;
+  background: rgba(0,0,0,0.2);
+}
+
+.log-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(245,239,224,0.05);
+  white-space: nowrap;
+}
+
+.log-table tr:hover td {
+  background: rgba(245,239,224,0.03);
+}
+
+.log-table .rank-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
 .site-footer-bar {
   margin-top: 60px;
   padding: 24px 20px;
@@ -1601,6 +1639,21 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
       <div class="section-line"></div>
     </div>
     <div id="popularList" class="popular-list"></div>
+
+    <!-- ログ一覧 + エクスポート -->
+    <div class="section-header" style="padding-top:0">
+      <h2 style="font-size:1rem;">📋 おみくじログ（全ユーザー）</h2>
+      <div class="section-line"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="abtn abtn-primary" id="logReloadBtn">🔄 最新を読み込む</button>
+      <button class="abtn abtn-success" id="csvExportBtn">📥 CSVエクスポート</button>
+      <button class="abtn abtn-gold"    id="sheetExportBtn">📊 スプレッドシートで開く</button>
+    </div>
+    <div id="logTableWrap" style="overflow-x:auto;margin-bottom:28px;">
+      <div id="logLoading" style="color:rgba(245,239,224,0.3);font-size:0.82rem;padding:12px">読み込み中…</div>
+      <table id="logTable" class="log-table" style="display:none"></table>
+    </div>
 
     <!-- Yokai list -->
     <div class="section-header" style="padding-top:0">
@@ -3114,12 +3167,15 @@ const Admin = {
   },
 
   _devReady: false,
+  _logReady: false,
+  _logCache: [],
 
   _openPanel() {
     DOM.adminOverlay().classList.add('show');
     this._renderStats();
     this._renderPopular();
     this._renderGrid();
+    this._renderLog();
 
     // DEVボタンのリスナーは初回のみ登録
     if (!this._devReady) {
@@ -3146,6 +3202,113 @@ const Admin = {
         toast('🗑 統計をクリアしました');
       });
     }
+
+    // ログ操作ボタン（初回のみ）
+    if (!this._logReady) {
+      this._logReady = true;
+      document.getElementById('logReloadBtn').addEventListener('click', () => this._renderLog());
+      document.getElementById('csvExportBtn').addEventListener('click', () => this._exportCSV());
+      document.getElementById('sheetExportBtn').addEventListener('click', () => this._openSheet());
+    }
+  },
+
+  // ========== ログ一覧 ==========
+  async _renderLog() {
+    const loading = document.getElementById('logLoading');
+    const table   = document.getElementById('logTable');
+    loading.style.display = 'block';
+    table.style.display   = 'none';
+
+    try {
+      const fb = window.__FB__;
+      if (!fb) throw new Error('Firebase未初期化');
+      const { db, collection, getDocs, query, orderBy, limit } = fb;
+
+      const q    = query(collection(db, 'omikuji_logs'), orderBy('time', 'desc'), limit(200));
+      const snap = await getDocs(q);
+
+      const rows = [];
+      snap.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));
+      this._logCache = rows;
+
+      if (rows.length === 0) {
+        loading.textContent = 'ログがまだありません';
+        return;
+      }
+
+      const RANK_COLORS = { SS:'#c9972a', S:'#7b7bb5', A:'#2e7d52', B:'#2c7aaa', C:'#7a7a7a' };
+
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>日時</th>
+            <th>妖怪名</th>
+            <th>ランク</th>
+            <th>スポット</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => {
+            const dt   = r.time ? new Date(r.time).toLocaleString('ja-JP') : '—';
+            const spot = r.location || '—';
+            const col  = RANK_COLORS[r.rank] || '#888';
+            return `<tr>
+              <td>${dt}</td>
+              <td>${r.emoji || ''} ${r.yokaiName || '—'}</td>
+              <td><span class="rank-badge" style="background:${col}22;color:${col};border:1px solid ${col}">${r.rank || '—'}</span></td>
+              <td>${spot}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>`;
+
+      loading.style.display = 'none';
+      table.style.display   = 'table';
+      toast(`✅ ${rows.length}件のログを取得しました`);
+
+    } catch(e) {
+      loading.textContent = `⚠ 読み込み失敗: ${e.message}`;
+      console.error('[Log]', e);
+    }
+  },
+
+  // ========== CSVエクスポート ==========
+  _exportCSV() {
+    if (this._logCache.length === 0) {
+      toast('⚠ 先にログを読み込んでください');
+      return;
+    }
+
+    const header = ['日時', '妖怪名', 'ランク', 'スポット', '妖怪ID'];
+    const rows   = this._logCache.map(r => [
+      r.time ? new Date(r.time).toLocaleString('ja-JP') : '',
+      r.yokaiName || '',
+      r.rank       || '',
+      r.location   || '',
+      r.yokaiId    || '',
+    ]);
+
+    const bom = '\uFEFF'; // Excel用BOM
+    const csv = bom + [header, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `omikuji_log_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('📥 CSVをダウンロードしました');
+  },
+
+  // ========== スプレッドシートで開く ==========
+  _openSheet() {
+    // CSVをダウンロードしてからスプシの説明を表示
+    this._exportCSV();
+    setTimeout(() => {
+      toast('💡 Google スプレッドシート → ファイル → インポート でCSVを読み込めます');
+    }, 800);
   },
 
   close() {

@@ -545,6 +545,35 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
 .action-btn-spot  { background: linear-gradient(135deg,#c0392b,#8b1a1a); color: #ffc8c0; box-shadow: 0 4px 14px rgba(192,57,43,0.35); }
 .action-btn-share { background: linear-gradient(135deg,#2c5fa5,#1a3d7a); color: #b0c8f8; box-shadow: 0 4px 14px rgba(44,95,165,0.35); }
 .action-btn-x     { background: linear-gradient(135deg,#1a1a1a,#111);     color: #ccc;    border: 1px solid #333; }
+.action-btn-print { background: linear-gradient(135deg,#2a4a2a,#1a3a1a); color: #a8d8a8; box-shadow: 0 4px 14px rgba(42,74,42,0.35); }
+
+/* =============================================
+   印刷用スタイル
+   ============================================= */
+#printFrame {
+  display: none;
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  #printFrame, #printFrame * { visibility: visible !important; }
+  #printFrame {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: white !important;
+    z-index: 99999 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
 
 /* Cooldown / Error messages */
 .msg-box {
@@ -3235,6 +3264,7 @@ const App = {
         ${boost ? `<button class="action-btn action-btn-spot" id="goSpotBtn">🗺 スポットへ行く</button>` : ''}
         <button class="action-btn action-btn-x" onclick="window.open('${xUrl}','_blank')">𝕏 ポスト</button>
         <button class="action-btn action-btn-share" id="shareResultBtn">📤 シェア</button>
+        <button class="action-btn action-btn-print" id="printResultBtn">🖨 印刷</button>
       </div>`;
 
     area.innerHTML = `
@@ -3298,6 +3328,370 @@ const App = {
           document.getElementById('qrcode')?.scrollIntoView({ behavior:'smooth' });
         }
       });
+    }
+
+    // 印刷ボタン
+    const printBtn = document.getElementById('printResultBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => this._printResult(y));
+    }
+  },
+
+  // ========== 印刷 ==========
+  _printResult(y) {
+    const fortune = (y.fortune && typeof y.fortune === 'object') ? y.fortune : null;
+    const stats   = y.stats  || null;
+    const lucky   = y.lucky  || null;
+    const boost   = y.boostSpot || null;
+    const today   = new Date().toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' });
+    const overall = fortune ? fortune.overall : (y.fortune || '');
+
+    const stars = (n) => {
+      const f = Math.max(0, Math.min(5, n));
+      return `<span style="color:#c9972a">${'★'.repeat(f)}</span><span style="color:#ccc">${'☆'.repeat(5-f)}</span>`;
+    };
+
+    const RANK_COLOR = { SSS:'#c9972a', SS:'#c9972a', S:'#7b7bb5', A:'#2e7d52', B:'#2c7aaa', C:'#7a7a7a' };
+    const rankColor  = RANK_COLOR[y.rank] || '#888';
+
+    // QRコードURLの生成
+    const shareData = { id:y.id, name:y.name, emoji:y.emoji, rank:y.rank,
+      overall, love: fortune?.love || '', spot: boost?.name || '' };
+    const qrUrl = `${location.href.split('?')[0]}?result=${encodeURIComponent(JSON.stringify(shareData))}`;
+
+    const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>おみくじ結果 — ${y.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width: 210mm;
+  min-height: 297mm;
+  background: #0f0d0a;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: #f5efe0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.card {
+  width: 210mm;
+  min-height: 297mm;
+  background: #0f0d0a;
+  padding: 18mm 16mm;
+  position: relative;
+  overflow: hidden;
+}
+/* 装飾ライン */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #c0392b, #c9972a, #c0392b);
+}
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #c0392b, #c9972a, #c0392b);
+}
+.site-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 10pt;
+  color: #c9972a;
+  letter-spacing: 0.3em;
+  text-align: center;
+  margin-bottom: 6mm;
+}
+.divider {
+  border: none;
+  border-top: 1px solid rgba(201,151,42,0.3);
+  margin: 4mm 0;
+}
+.divider-thick {
+  border-top: 1.5px solid #c9972a;
+}
+/* 妖怪名エリア */
+.yokai-header {
+  text-align: center;
+  margin-bottom: 6mm;
+}
+.rank-badge {
+  display: inline-block;
+  padding: 2px 14px;
+  border: 1.5px solid ${rankColor};
+  border-radius: 100px;
+  font-size: 9pt;
+  font-weight: 700;
+  color: ${rankColor};
+  letter-spacing: 0.2em;
+  margin-bottom: 3mm;
+}
+.yokai-emoji {
+  font-size: 52pt;
+  display: block;
+  margin: 3mm 0;
+}
+.yokai-name {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 28pt;
+  font-weight: 900;
+  color: #f0c040;
+  letter-spacing: 0.08em;
+  margin-bottom: 2mm;
+}
+.yokai-desc {
+  font-size: 9pt;
+  color: rgba(245,239,224,0.55);
+  line-height: 1.6;
+}
+/* 総合運 */
+.overall-box {
+  background: rgba(201,151,42,0.08);
+  border-left: 4px solid #c9972a;
+  padding: 4mm 6mm;
+  margin: 5mm 0;
+  border-radius: 0 6px 6px 0;
+}
+.overall-label {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 9pt;
+  color: rgba(201,151,42,0.7);
+  letter-spacing: 0.2em;
+  margin-bottom: 2mm;
+}
+.overall-text {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 13pt;
+  font-weight: 700;
+  color: #f0c040;
+  line-height: 1.5;
+}
+/* 運勢グリッド */
+.fortune-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3mm;
+  margin: 4mm 0;
+}
+.fortune-item {
+  background: rgba(245,239,224,0.04);
+  border: 0.8px solid rgba(245,239,224,0.1);
+  border-radius: 6px;
+  padding: 3mm 4mm;
+}
+.fortune-label {
+  font-size: 8pt;
+  color: rgba(245,239,224,0.4);
+  letter-spacing: 0.15em;
+  font-family: 'Noto Serif JP', serif;
+  margin-bottom: 1.5mm;
+}
+.fortune-text {
+  font-size: 9pt;
+  color: rgba(245,239,224,0.8);
+  line-height: 1.4;
+  margin-bottom: 2mm;
+}
+.stars { font-size: 10pt; letter-spacing: 1px; }
+/* ラッキー */
+.lucky-row {
+  display: flex;
+  gap: 3mm;
+  flex-wrap: wrap;
+  margin: 3mm 0;
+}
+.lucky-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2mm 4mm;
+  background: rgba(44,62,107,0.35);
+  border: 0.8px solid rgba(44,62,107,0.55);
+  border-radius: 100px;
+  font-size: 8.5pt;
+  color: rgba(160,185,245,0.9);
+}
+/* スポット */
+.spot-box {
+  background: rgba(192,57,43,0.08);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 6px;
+  padding: 4mm 5mm;
+  margin: 4mm 0;
+  display: flex;
+  gap: 3mm;
+  align-items: flex-start;
+}
+.spot-type {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #c0392b;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5mm;
+}
+.spot-name {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #f0c040;
+  margin-bottom: 1.5mm;
+}
+.spot-msg {
+  font-size: 8pt;
+  color: rgba(245,239,224,0.5);
+  line-height: 1.5;
+}
+/* 下部エリア */
+.bottom-row {
+  display: flex;
+  gap: 5mm;
+  align-items: flex-start;
+  margin-top: 5mm;
+}
+.qr-wrap {
+  flex-shrink: 0;
+}
+.qr-wrap canvas, .qr-wrap img {
+  border-radius: 4px;
+  padding: 4px;
+  background: white;
+}
+.bottom-info {
+  flex: 1;
+}
+.date-text {
+  font-size: 8.5pt;
+  color: rgba(245,239,224,0.35);
+  margin-bottom: 2mm;
+}
+.url-text {
+  font-size: 7.5pt;
+  color: rgba(201,151,42,0.6);
+  word-break: break-all;
+  margin-bottom: 2mm;
+}
+.credit-text {
+  font-size: 7.5pt;
+  color: rgba(245,239,224,0.2);
+  line-height: 1.6;
+}
+.hashtag {
+  font-size: 8pt;
+  color: rgba(44,95,165,0.7);
+  margin-top: 2mm;
+}
+@media print {
+  body { width: 210mm; }
+  .card { min-height: 297mm; }
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="site-title">鎌 倉 妖 怪 守 護 神 お み く じ</div>
+  <hr class="divider divider-thick">
+
+  <div class="yokai-header">
+    <div class="rank-badge">RANK ${y.rank}</div>
+    <span class="yokai-emoji">${y.emoji || '👻'}</span>
+    <div class="yokai-name">${y.name}</div>
+    <p class="yokai-desc">${y.description}</p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="overall-box">
+    <div class="overall-label">総合運</div>
+    <div class="overall-text">${overall}</div>
+  </div>
+
+  ${fortune && stats ? `
+  <div class="fortune-grid">
+    <div class="fortune-item">
+      <div class="fortune-label">💕 恋愛運</div>
+      <div class="fortune-text">${fortune.love}</div>
+      <div class="stars">${stars(stats.love)}</div>
+    </div>
+    <div class="fortune-item">
+      <div class="fortune-label">💰 金運</div>
+      <div class="fortune-text">${fortune.money}</div>
+      <div class="stars">${stars(stats.money)}</div>
+    </div>
+    <div class="fortune-item">
+      <div class="fortune-label">💪 健康運</div>
+      <div class="fortune-text">${fortune.health}</div>
+      <div class="stars">${stats ? stars(stats.health) : ''}</div>
+    </div>
+    <div class="fortune-item">
+      <div class="fortune-label">💼 仕事運</div>
+      <div class="fortune-text">${fortune.work}</div>
+      <div class="stars">${stats ? stars(stats.work) : ''}</div>
+    </div>
+  </div>` : ''}
+
+  ${lucky ? `
+  <div class="lucky-row">
+    <span class="lucky-chip">🎯 ${lucky.action}</span>
+    <span class="lucky-chip">✨ ${lucky.item}</span>
+    <span class="lucky-chip">🎨 ${lucky.color}</span>
+  </div>` : ''}
+
+  ${boost ? `
+  <div class="spot-box">
+    <span style="font-size:20pt">📍</span>
+    <div>
+      <div class="spot-type">${boost.type}</div>
+      <div class="spot-name">${boost.name}</div>
+      <div class="spot-msg">${boost.message}</div>
+    </div>
+  </div>` : ''}
+
+  <hr class="divider">
+
+  <div class="bottom-row">
+    <div class="qr-wrap">
+      <div id="printQR"></div>
+    </div>
+    <div class="bottom-info">
+      <div class="date-text">占い日：${today}</div>
+      <div class="url-text">moko-kilameki.github.io/kamakura-yokai-omikuji/</div>
+      <div class="credit-text">
+        アプリ開発・運営：就労継続支援B型 キタクリワーク<br>
+        企画・PR：鎌倉ITクリエイターファクトリー
+      </div>
+      <div class="hashtag">#鎌倉妖怪守護神おみくじ　#${y.name}</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.onload = function() {
+    new QRCode(document.getElementById('printQR'), {
+      text: '${qrUrl.replace(/'/g, "\\'")}',
+      width: 90, height: 90,
+      colorDark: '#1a1008', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    setTimeout(() => window.print(), 800);
+  };
+<\/script>
+</body>
+</html>`;
+
+    // 印刷用ウィンドウを開く
+    const printWin = window.open('', '_blank', 'width=800,height=900');
+    if (printWin) {
+      printWin.document.write(html);
+      printWin.document.close();
+    } else {
+      toast('⚠ ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
     }
   },
 
@@ -4049,6 +4443,9 @@ document.addEventListener('DOMContentLoaded', () => App.init());
   src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"
   onerror="document.getElementById('map').style.display='none'">
 </script>
+
+<!-- 印刷用フレーム -->
+<div id="printFrame"></div>
 
 </body>
 </html>

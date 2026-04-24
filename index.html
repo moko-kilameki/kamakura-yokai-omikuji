@@ -3371,48 +3371,46 @@ const App = {
 body {
   width: 210mm;
   min-height: 297mm;
-  background: #0f0d0a;
+  background: white;
   font-family: 'Noto Sans JP', sans-serif;
-  color: #f5efe0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  color: #1a1008;
 }
 .card {
   width: 210mm;
   min-height: 297mm;
-  background: #0f0d0a;
-  padding: 18mm 16mm;
+  background: white;
+  padding: 14mm 16mm 16mm;
   position: relative;
-  overflow: hidden;
 }
-/* 装飾ライン */
+/* 上下の装飾ライン */
 .card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 5px;
+  height: 6px;
   background: linear-gradient(90deg, #c0392b, #c9972a, #c0392b);
 }
 .card::after {
   content: '';
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 5px;
+  height: 6px;
   background: linear-gradient(90deg, #c0392b, #c9972a, #c0392b);
 }
+/* サイトタイトル */
 .site-title {
   font-family: 'Noto Serif JP', serif;
-  font-size: 10pt;
-  color: #c9972a;
-  letter-spacing: 0.3em;
+  font-size: 9pt;
+  color: #8b6914;
+  letter-spacing: 0.35em;
   text-align: center;
-  margin-bottom: 6mm;
+  margin-bottom: 5mm;
+  margin-top: 3mm;
 }
 .divider {
   border: none;
-  border-top: 1px solid rgba(201,151,42,0.3);
-  margin: 4mm 0;
+  border-top: 1px solid #d4b96a;
+  margin: 3.5mm 0;
 }
 .divider-thick {
   border-top: 1.5px solid #c9972a;
@@ -3420,7 +3418,7 @@ body {
 /* 妖怪名エリア */
 .yokai-header {
   text-align: center;
-  margin-bottom: 6mm;
+  margin-bottom: 5mm;
 }
 .rank-badge {
   display: inline-block;
@@ -3431,79 +3429,84 @@ body {
   font-weight: 700;
   color: ${rankColor};
   letter-spacing: 0.2em;
-  margin-bottom: 3mm;
+  margin-bottom: 2.5mm;
+  background: white;
 }
 .yokai-emoji {
-  font-size: 52pt;
+  font-size: 48pt;
   display: block;
-  margin: 3mm 0;
+  margin: 2mm 0;
 }
 .yokai-name {
   font-family: 'Noto Serif JP', serif;
-  font-size: 28pt;
+  font-size: 26pt;
   font-weight: 900;
-  color: #f0c040;
-  letter-spacing: 0.08em;
+  color: #1a1008;
+  letter-spacing: 0.06em;
   margin-bottom: 2mm;
 }
 .yokai-desc {
   font-size: 9pt;
-  color: #c8baa8;
+  color: #5a4a3a;
   line-height: 1.6;
 }
 /* 総合運 */
 .overall-box {
-  background: rgba(201,151,42,0.12);
+  background: #fffbf0;
   border-left: 4px solid #c9972a;
+  border: 1px solid #e8c870;
+  border-left-width: 4px;
   padding: 4mm 6mm;
-  margin: 5mm 0;
+  margin: 4mm 0;
   border-radius: 0 6px 6px 0;
 }
 .overall-label {
   font-family: 'Noto Serif JP', serif;
-  font-size: 9pt;
-  color: #c9972a;
+  font-size: 8.5pt;
+  color: #8b6914;
   letter-spacing: 0.2em;
-  margin-bottom: 2mm;
+  margin-bottom: 1.5mm;
+  font-weight: 700;
 }
 .overall-text {
   font-family: 'Noto Serif JP', serif;
   font-size: 13pt;
   font-weight: 700;
-  color: #f0c040;
+  color: #1a1008;
   line-height: 1.5;
 }
 /* 運勢グリッド */
 .fortune-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3mm;
-  margin: 4mm 0;
+  gap: 2.5mm;
+  margin: 3.5mm 0;
 }
 .fortune-item {
-  background: rgba(245,239,224,0.07);
-  border: 1px solid rgba(245,239,224,0.2);
-  border-radius: 6px;
-  padding: 3mm 4mm;
+  background: #f8f4ec;
+  border: 1px solid #d4c8a0;
+  border-radius: 5px;
+  padding: 2.5mm 3.5mm;
 }
 .fortune-label {
   font-size: 8pt;
-  color: #c9972a;
-  letter-spacing: 0.15em;
+  color: #8b6914;
+  letter-spacing: 0.12em;
   font-family: 'Noto Serif JP', serif;
-  margin-bottom: 1.5mm;
+  margin-bottom: 1mm;
+  font-weight: 700;
 }
 .fortune-text {
   font-size: 9pt;
-  color: #e8dcc8;
+  color: #2a1a0a;
   line-height: 1.4;
-  margin-bottom: 2mm;
+  margin-bottom: 1.5mm;
 }
 .stars { font-size: 10pt; letter-spacing: 1px; }
 /* ラッキー */
 .lucky-row {
   display: flex;
-  gap: 3mm;
+  gap: 2.5mm;
   flex-wrap: wrap;
   margin: 3mm 0;
 }
@@ -3511,20 +3514,22 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2mm 4mm;
-  background: rgba(44,62,107,0.5);
-  border: 1px solid rgba(100,130,200,0.6);
+  padding: 1.5mm 4mm;
+  background: #eef2fc;
+  border: 1px solid #a0b4e0;
   border-radius: 100px;
   font-size: 8.5pt;
-  color: #b8d0f8;
+  color: #1a3a8a;
+  font-weight: 700;
 }
 /* スポット */
 .spot-box {
-  background: rgba(192,57,43,0.12);
-  border: 1px solid rgba(192,57,43,0.5);
-  border-radius: 6px;
-  padding: 4mm 5mm;
-  margin: 4mm 0;
+  background: #fff5f4;
+  border: 1px solid #e08070;
+  border-left-width: 3px;
+  border-radius: 5px;
+  padding: 3.5mm 4.5mm;
+  margin: 3.5mm 0;
   display: flex;
   gap: 3mm;
   align-items: flex-start;
@@ -3532,7 +3537,7 @@ body {
 .spot-type {
   font-size: 7.5pt;
   font-weight: 700;
-  color: #e05545;
+  color: #c0392b;
   letter-spacing: 0.1em;
   margin-bottom: 1.5mm;
 }
@@ -3540,12 +3545,12 @@ body {
   font-family: 'Noto Serif JP', serif;
   font-size: 11pt;
   font-weight: 700;
-  color: #f0c040;
+  color: #1a1008;
   margin-bottom: 1.5mm;
 }
 .spot-msg {
-  font-size: 8pt;
-  color: #a89880;
+  font-size: 8.5pt;
+  color: #4a3a2a;
   line-height: 1.5;
 }
 /* 下部エリア */
@@ -3553,39 +3558,38 @@ body {
   display: flex;
   gap: 5mm;
   align-items: flex-start;
-  margin-top: 5mm;
+  margin-top: 4mm;
+  padding-top: 4mm;
+  border-top: 1px solid #d4b96a;
 }
-.qr-wrap {
-  flex-shrink: 0;
-}
+.qr-wrap { flex-shrink: 0; }
 .qr-wrap canvas, .qr-wrap img {
   border-radius: 4px;
-  padding: 4px;
-  background: white;
+  border: 1px solid #d4c8a0;
 }
-.bottom-info {
-  flex: 1;
-}
+.bottom-info { flex: 1; }
 .date-text {
   font-size: 8.5pt;
-  color: #a89878;
+  color: #4a3a2a;
   margin-bottom: 2mm;
+  font-weight: 700;
 }
 .url-text {
   font-size: 7.5pt;
-  color: #c9972a;
+  color: #8b6914;
   word-break: break-all;
   margin-bottom: 2mm;
 }
 .credit-text {
   font-size: 7.5pt;
-  color: #786858;
-  line-height: 1.6;
+  color: #5a4a3a;
+  line-height: 1.7;
 }
 .hashtag {
   font-size: 8pt;
-  color: #6888cc;
+  color: #1a3a8a;
   margin-top: 2mm;
+  font-weight: 700;
 }
 @media print {
   body { width: 210mm; }

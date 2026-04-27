@@ -10,7 +10,7 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer, setDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBg6TVHUs1_PPonn0a_wtY1nOfGqMvF564",
@@ -26,7 +26,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db    = getFirestore(fbApp);
 
 // グローバルに公開（メインスクリプトから使用）
-window.__FB__ = { db, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer };
+window.__FB__ = { db, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer, setDoc, doc, deleteDoc };
 console.log('✅ Firebase 初期化完了');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3091,8 +3091,7 @@ const App = {
 
       // 全件書き込み（idをドキュメントIDに使用）
       const writePromises = saveData.map(y => {
-        const { setDoc: sd, doc: docFn } = fb;
-        return sd(docFn(db, 'yokai_data', String(y.id)), y);
+        return fb.setDoc(fb.doc(db, 'yokai_data', String(y.id)), y);
       });
       await Promise.all(writePromises);
 

@@ -3015,16 +3015,94 @@ const App = {
   gmap: null,
 
   async init() {
-    this._loadYokai();
+    // まずデフォルトデータで即起動（画面をすぐ表示）
+    this._loadYokaiLocal();
     this._updateUI();
     this._renderBook();
     this._checkSharedResult();
     this._setupEvents();
-    this._checkShopAccess(); // 店舗QRアクセス判定
-    console.log('✅ App initialized — yokai count:', this.yokaiList.length);
+    this._checkShopAccess();
+    console.log('✅ App initialized (local) — yokai count:', this.yokaiList.length);
+
+    // バックグラウンドでFirestoreから最新データを取得
+    this._loadYokaiFirestore();
   },
 
-  // 店舗QRからのアクセス時にバナーをドロウボタン下に表示
+  // ローカル（LocalStorage）から読み込む（即時・オフライン対応）
+  _loadYokaiLocal() {
+    const saved = Storage.get('yokaiData');
+    const base  = (saved && saved.length > 0) ? saved : DEFAULT_YOKAI;
+    this.yokaiList = ShopManager.getAllYokai(base);
+  },
+
+  // Firestoreから読み込む（非同期・最新データ優先）
+  async _loadYokaiFirestore() {
+    try {
+      const fb = window.__FB__;
+      if (!fb) return;
+      const { db, collection, getDocs } = fb;
+      const snap = await getDocs(collection(db, 'yokai_data'));
+      if (snap.empty) return; // Firestoreにデータなし → デフォルトのまま
+
+      const fbData = [];
+      snap.forEach(doc => fbData.push(doc.data()));
+
+      if (fbData.length > 0) {
+        // Firestoreのデータで更新
+        Storage.set('yokaiData', fbData); // ローカルにもキャッシュ
+        this.yokaiList = ShopManager.getAllYokai(fbData);
+        this._updateUI();
+        this._renderBook();
+        // 管理画面が開いていれば再描画
+        const overlay = DOM.adminOverlay();
+        if (overlay && overlay.classList.contains('show')) {
+          Admin._renderGrid();
+          Admin._renderStats();
+        }
+        console.log('✅ Firestore から妖怪データ読み込み完了:', fbData.length, '体');
+      }
+    } catch(e) {
+      console.warn('[Firebase] yokai_data 読み込み失敗（ローカルデータを使用）:', e.message);
+    }
+  },
+
+  // Firestore + LocalStorage 両方に保存
+  async _saveYokai() {
+    // 通常88体のみ保存（SSS20体はコードで管理）
+    const saveData = this.yokaiList.filter(y => y.rank !== 'SSS');
+
+    // LocalStorageに保存（即時）
+    Storage.set('yokaiData', saveData);
+
+    // Firestoreに保存（非同期）
+    try {
+      const fb = window.__FB__;
+      if (!fb) return;
+      const { db, collection, addDoc, getDocs, deleteDoc, doc, setDoc } = fb;
+
+      // yokai_dataコレクションを全件削除して書き直す
+      const colRef = collection(db, 'yokai_data');
+
+      // 既存を全削除
+      const existing = await getDocs(colRef);
+      const deletePromises = [];
+      existing.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+      await Promise.all(deletePromises);
+
+      // 全件書き込み（idをドキュメントIDに使用）
+      const writePromises = saveData.map(y => {
+        const { setDoc: sd, doc: docFn } = fb;
+        return sd(docFn(db, 'yokai_data', String(y.id)), y);
+      });
+      await Promise.all(writePromises);
+
+      console.log('✅ Firestore に妖怪データを保存:', saveData.length, '体');
+      toast('✅ クラウドに保存しました（次回起動時も保持されます）');
+    } catch(e) {
+      console.warn('[Firebase] yokai_data 保存失敗:', e.message);
+      toast('⚠ クラウド保存に失敗しました（ローカルには保存済み）');
+    }
+  },
   _checkShopAccess() {
     const shopId    = ShopManager.getShopId();
     const shopYokai = shopId ? ShopManager.getShopYokai(shopId) : null;
@@ -3043,18 +3121,6 @@ const App = {
         上のボタンを押しておみくじを引いてください
       </p>`;
     area.classList.add('show');
-  },
-
-  _loadYokai() {
-    const saved = Storage.get('yokaiData');
-    const base  = (saved && saved.length > 0) ? saved : DEFAULT_YOKAI;
-    // SSS店舗妖怪を常に含める（管理画面の図鑑表示用）
-    this.yokaiList = ShopManager.getAllYokai(base);
-  },
-
-  _saveYokai() {
-    // 通常88体のみ保存（SSS20体はコードで管理）
-    Storage.set('yokaiData', this.yokaiList.filter(y => y.rank !== 'SSS'));
   },
 
   // ========== Draw ==========
@@ -4329,7 +4395,7 @@ const Admin = {
       toast('✅ 新しい妖怪を追加しました');
     }
 
-    App._saveYokai();
+    App._saveYokai(); // Firestore + LocalStorage に保存
     App._updateUI();
     App._renderBook();
     this._renderGrid();
@@ -4341,7 +4407,7 @@ const Admin = {
     const y = App.yokaiList.find(x => x.id === id);
     if (!y || !confirm(`「${y.name}」を削除しますか？`)) return;
     App.yokaiList = App.yokaiList.filter(x => x.id !== id);
-    App._saveYokai();
+    App._saveYokai(); // Firestore + LocalStorage に保存
     App._updateUI();
     App._renderBook();
     this._renderGrid();

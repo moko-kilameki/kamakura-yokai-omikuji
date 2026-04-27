@@ -3054,13 +3054,15 @@ const App = {
 
   // ローカル（LocalStorage）から読み込む（即時・オフライン対応）
   _loadYokaiLocal() {
-    // SSS含む全体キャッシュがあればそちらを優先
     const savedAll = Storage.get('yokaiData_all');
     if (savedAll && savedAll.length > 0) {
-      this.yokaiList = savedAll;
+      // SSS妖怪がなければ補完
+      const hasSss = savedAll.some(y => y.rank === 'SSS');
+      this.yokaiList = hasSss
+        ? savedAll
+        : [...savedAll.filter(y => y.rank !== 'SSS'), ...SHOP_YOKAI];
       return;
     }
-    // 旧形式（SSS無し）のキャッシュ or デフォルト
     const saved = Storage.get('yokaiData');
     const base  = (saved && saved.length > 0) ? saved : DEFAULT_YOKAI;
     this.yokaiList = ShopManager.getAllYokai(base);
@@ -3080,9 +3082,14 @@ const App = {
       snap.forEach(doc => fbData.push(doc.data()));
 
       if (fbData.length > 0) {
-        // Firestoreのデータにすでにすべて含まれているのでそのまま使う
-        Storage.set('yokaiData_all', fbData);
-        this.yokaiList = fbData;
+        // FirestoreにSSS妖怪がない場合はSHOP_YOKAIで補完
+        const hasSss = fbData.some(y => y.rank === 'SSS');
+        const merged = hasSss
+          ? fbData
+          : [...fbData.filter(y => y.rank !== 'SSS'), ...SHOP_YOKAI];
+
+        Storage.set('yokaiData_all', merged);
+        this.yokaiList = merged;
         this._updateUI();
         this._renderBook();
         const overlay = DOM.adminOverlay();
@@ -3090,7 +3097,7 @@ const App = {
           Admin._renderGrid();
           Admin._renderStats();
         }
-        console.log('✅ Firestore から妖怪データ読み込み完了:', fbData.length, '体');
+        console.log('✅ Firestore から妖怪データ読み込み完了:', merged.length, '体（SSS:', merged.filter(y=>y.rank==='SSS').length, '体）');
       }
     } catch(e) {
       console.warn('[Firebase] yokai_data 読み込み失敗（ローカルデータを使用）:', e.message);
@@ -4061,6 +4068,16 @@ const Admin = {
 
   _openPanel() {
     DOM.adminOverlay().classList.add('show');
+
+    // SSS妖怪が0体の場合は自動補完して保存
+    const sssCount = App.yokaiList.filter(y => y.rank === 'SSS').length;
+    if (sssCount === 0) {
+      console.warn('[Admin] SSS妖怪が0体 → SHOP_YOKAIで自動補完');
+      App.yokaiList = [...App.yokaiList.filter(y => y.rank !== 'SSS'), ...SHOP_YOKAI];
+      App._saveYokai();
+      toast('⚠ 店舗限定キャラを自動復元しました');
+    }
+
     this._renderStats();
     this._renderPopular();
     this._renderGrid();

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Permissions-Policy" content="geolocation=*">
 <title>鎌倉妖怪守護神おみくじ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -1937,10 +1938,11 @@ const GPS = {
   getCurrentPosition() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) { reject(new Error('GPS_UNSUPPORTED')); return; }
-      const timer = setTimeout(() => reject(new Error('GPS_TIMEOUT')), 5000);
+      const timer = setTimeout(() => reject(new Error('GPS_TIMEOUT')), 10000);
       navigator.geolocation.getCurrentPosition(
         pos => { clearTimeout(timer); resolve(pos.coords); },
-        err => { clearTimeout(timer); reject(err); }
+        err => { clearTimeout(timer); reject(err); },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
       );
     });
   },
@@ -3438,6 +3440,15 @@ body {
   display: block;
   margin: 2mm 0;
 }
+.yokai-img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  display: block;
+  margin: 3mm auto;
+  border-radius: 8px;
+  border: 1px solid #d4c8a0;
+}
 .yokai-name {
   font-family: 'Noto Serif JP', serif;
   font-size: 26pt;
@@ -3605,7 +3616,10 @@ body {
 
   <div class="yokai-header">
     <div class="rank-badge">RANK ${y.rank}</div>
-    <span class="yokai-emoji">${y.emoji || '👻'}</span>
+    ${y.image
+      ? `<img src="${y.image}" class="yokai-img" alt="${y.name}">`
+      : `<span class="yokai-emoji">${y.emoji || '👻'}</span>`
+    }
     <div class="yokai-name">${y.name}</div>
     <p class="yokai-desc">${y.description}</p>
   </div>
@@ -4285,10 +4299,19 @@ const Admin = {
       };
       const boostName = document.getElementById('fBoostName').value.trim();
       const boostMsg  = document.getElementById('fBoostMsg').value.trim();
-      if (entry.boostSpot) {
-        entry.boostSpot = { ...entry.boostSpot, name: boostName, message: boostMsg };
-      } else {
-        entry.boostSpot = { name: boostName, type:'SSS限定パワースポット', lat: entry.lat, lng: entry.lng, message: boostMsg };
+      // 既存のboostSpotからlat/lngを引き継ぐ
+      const existing = App.yokaiList.find(x => x.id === entry.id);
+      const existingBoost = existing?.boostSpot || {};
+      entry.boostSpot = {
+        name:    boostName || existingBoost.name || '',
+        type:    existingBoost.type || 'SSS限定パワースポット',
+        lat:     existingBoost.lat  || entry.lat,
+        lng:     existingBoost.lng  || entry.lng,
+        message: boostMsg || existingBoost.message || '',
+      };
+      // 画像が未変更の場合は既存画像を引き継ぐ
+      if (!entry.image && existing?.image) {
+        entry.image = existing.image;
       }
     }
 

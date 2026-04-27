@@ -2965,8 +2965,13 @@ const ShopManager = {
     return new URLSearchParams(location.search).get('shop') || null;
   },
 
-  // 店舗専用妖怪を取得
+  // 店舗専用妖怪を取得（App.yokaiListから最新データを参照）
   getShopYokai(shopId) {
+    // App.yokaiListにFirestoreからの最新データが入っている場合はそちらを優先
+    if (typeof App !== 'undefined' && App.yokaiList) {
+      const found = App.yokaiList.find(y => y.rank === 'SSS' && y.shopId === shopId);
+      if (found) return found;
+    }
     return SHOP_YOKAI.find(y => y.shopId === shopId) || null;
   },
 
@@ -3049,6 +3054,13 @@ const App = {
 
   // ローカル（LocalStorage）から読み込む（即時・オフライン対応）
   _loadYokaiLocal() {
+    // SSS含む全体キャッシュがあればそちらを優先
+    const savedAll = Storage.get('yokaiData_all');
+    if (savedAll && savedAll.length > 0) {
+      this.yokaiList = savedAll;
+      return;
+    }
+    // 旧形式（SSS無し）のキャッシュ or デフォルト
     const saved = Storage.get('yokaiData');
     const base  = (saved && saved.length > 0) ? saved : DEFAULT_YOKAI;
     this.yokaiList = ShopManager.getAllYokai(base);
@@ -3068,8 +3080,9 @@ const App = {
       snap.forEach(doc => fbData.push(doc.data()));
 
       if (fbData.length > 0) {
-        Storage.set('yokaiData', fbData);
-        this.yokaiList = ShopManager.getAllYokai(fbData);
+        // Firestoreのデータにすでにすべて含まれているのでそのまま使う
+        Storage.set('yokaiData_all', fbData);
+        this.yokaiList = fbData;
         this._updateUI();
         this._renderBook();
         const overlay = DOM.adminOverlay();
@@ -3084,12 +3097,13 @@ const App = {
     }
   },
 
-  // Firestore + LocalStorage 両方に保存
+  // Firestore + LocalStorage 両方に保存（SSS含む全108体）
   async _saveYokai() {
-    const saveData = this.yokaiList.filter(y => y.rank !== 'SSS');
+    // SSS含む全データを保存
+    const saveData = this.yokaiList; // SSS含む全体
 
     // LocalStorageに即時保存
-    Storage.set('yokaiData', saveData);
+    Storage.set('yokaiData_all', saveData);
 
     // Firestoreに保存
     try {
@@ -3098,13 +3112,12 @@ const App = {
       const db = fb.db;
       const colRef = db.collection('yokai_data');
 
-      // 既存を全削除
+      // 既存を全削除 → 全件書き込み（batchで高速化）
       const existing = await colRef.get();
-      const batch = db.batch();
-      existing.forEach(d => batch.delete(d.ref));
-      await batch.commit();
+      const delBatch = db.batch();
+      existing.forEach(d => delBatch.delete(d.ref));
+      await delBatch.commit();
 
-      // 全件書き込み
       const writeBatch = db.batch();
       saveData.forEach(y => {
         const ref = colRef.doc(String(y.id));

@@ -3096,10 +3096,10 @@ const App = {
       await Promise.all(writePromises);
 
       console.log('✅ Firestore に妖怪データを保存:', saveData.length, '体');
-      toast('✅ クラウドに保存しました（次回起動時も保持されます）');
+      setTimeout(() => toast('☁️ クラウドに保存しました！'), 300);
     } catch(e) {
       console.warn('[Firebase] yokai_data 保存失敗:', e.message);
-      toast('⚠ クラウド保存に失敗しました（ローカルには保存済み）');
+      setTimeout(() => toast('⚠ クラウド保存に失敗しました（ローカルには保存済み）'), 300);
     }
   },
   _checkShopAccess() {
@@ -4394,23 +4394,25 @@ const Admin = {
       toast('✅ 新しい妖怪を追加しました');
     }
 
-    App._saveYokai(); // Firestore + LocalStorage に保存
     App._updateUI();
     App._renderBook();
     this._renderGrid();
     this._renderStats();
     this.closeModal();
+
+    // Firestore保存（非同期・別途トースト表示）
+    App._saveYokai();
   },
 
   delete(id) {
     const y = App.yokaiList.find(x => x.id === id);
     if (!y || !confirm(`「${y.name}」を削除しますか？`)) return;
     App.yokaiList = App.yokaiList.filter(x => x.id !== id);
-    App._saveYokai(); // Firestore + LocalStorage に保存
     App._updateUI();
     App._renderBook();
     this._renderGrid();
     toast(`🗑 ${y.name} を削除しました`);
+    App._saveYokai(); // Firestore保存
   },
 
   _resetForm() {

@@ -1872,6 +1872,52 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
       </div>
     </div>
 
+    <div style="font-family:var(--serif);font-size:0.75rem;color:rgba(201,151,42,0.7);letter-spacing:0.12em;margin:12px 0 8px;">★ 星の数（1〜5）</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>💕 恋愛運 ★</label>
+        <select id="fStarLove">
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="5">★★★★★ (5)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>💰 金運 ★</label>
+        <select id="fStarMoney">
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="5">★★★★★ (5)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>💪 健康運 ★</label>
+        <select id="fStarHealth">
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="5">★★★★★ (5)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>💼 仕事運 ★</label>
+        <select id="fStarWork">
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="5">★★★★★ (5)</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label>緯度（lat）</label>
@@ -3314,27 +3360,29 @@ const App = {
     const overallText = fortune ? fortune.overall : (y.fortune || '');
 
     // 運勢詳細グリッド
-    const statsHtml = (fortune && stats) ? `
+    // fortune に love/money/health/work のいずれかがあれば表示
+    const hasFortune = fortune && (fortune.love || fortune.money || fortune.health || fortune.work);
+    const statsHtml = hasFortune ? `
       <div class="fortune-stats">
         <div class="fortune-stat-item">
           <span class="fortune-stat-label">💕 恋愛運</span>
-          <span class="fortune-stat-text">${fortune.love}</span>
-          <span class="fortune-stars">${this._stars(stats.love)}</span>
+          <span class="fortune-stat-text">${fortune.love || '—'}</span>
+          ${stats ? `<span class="fortune-stars">${this._stars(stats.love)}</span>` : ''}
         </div>
         <div class="fortune-stat-item">
           <span class="fortune-stat-label">💰 金運</span>
-          <span class="fortune-stat-text">${fortune.money}</span>
-          <span class="fortune-stars">${this._stars(stats.money)}</span>
+          <span class="fortune-stat-text">${fortune.money || '—'}</span>
+          ${stats ? `<span class="fortune-stars">${this._stars(stats.money)}</span>` : ''}
         </div>
         <div class="fortune-stat-item">
           <span class="fortune-stat-label">💪 健康運</span>
-          <span class="fortune-stat-text">${fortune.health}</span>
-          <span class="fortune-stars">${this._stars(stats.health)}</span>
+          <span class="fortune-stat-text">${fortune.health || '—'}</span>
+          ${stats ? `<span class="fortune-stars">${this._stars(stats.health)}</span>` : ''}
         </div>
         <div class="fortune-stat-item">
           <span class="fortune-stat-label">💼 仕事運</span>
-          <span class="fortune-stat-text">${fortune.work}</span>
-          <span class="fortune-stars">${this._stars(stats.work)}</span>
+          <span class="fortune-stat-text">${fortune.work || '—'}</span>
+          ${stats ? `<span class="fortune-stars">${this._stars(stats.work)}</span>` : ''}
         </div>
       </div>` : '';
 
@@ -3734,27 +3782,27 @@ body {
     <div class="overall-text">${overall}</div>
   </div>
 
-  ${fortune && stats ? `
+  ${fortune && (fortune.love || fortune.money || fortune.health || fortune.work) ? `
   <div class="fortune-grid">
     <div class="fortune-item">
       <div class="fortune-label">💕 恋愛運</div>
-      <div class="fortune-text">${fortune.love}</div>
-      <div class="stars">${stars(stats.love)}</div>
+      <div class="fortune-text">${fortune.love || '—'}</div>
+      ${stats ? `<div class="stars">${stars(stats.love)}</div>` : ''}
     </div>
     <div class="fortune-item">
       <div class="fortune-label">💰 金運</div>
-      <div class="fortune-text">${fortune.money}</div>
-      <div class="stars">${stars(stats.money)}</div>
+      <div class="fortune-text">${fortune.money || '—'}</div>
+      ${stats ? `<div class="stars">${stars(stats.money)}</div>` : ''}
     </div>
     <div class="fortune-item">
       <div class="fortune-label">💪 健康運</div>
-      <div class="fortune-text">${fortune.health}</div>
-      <div class="stars">${stats ? stars(stats.health) : ''}</div>
+      <div class="fortune-text">${fortune.health || '—'}</div>
+      ${stats ? `<div class="stars">${stars(stats.health)}</div>` : ''}
     </div>
     <div class="fortune-item">
       <div class="fortune-label">💼 仕事運</div>
-      <div class="fortune-text">${fortune.work}</div>
-      <div class="stars">${stats ? stars(stats.work) : ''}</div>
+      <div class="fortune-text">${fortune.work || '—'}</div>
+      ${stats ? `<div class="stars">${stars(stats.work)}</div>` : ''}
     </div>
   </div>` : ''}
 
@@ -4345,6 +4393,11 @@ const Admin = {
       document.getElementById('fMoney').value    = y.fortune?.money  || '';
       document.getElementById('fHealth').value   = y.fortune?.health || '';
       document.getElementById('fWork').value     = y.fortune?.work   || '';
+      // 星の数
+      document.getElementById('fStarLove').value   = y.stats?.love   || 3;
+      document.getElementById('fStarMoney').value  = y.stats?.money  || 3;
+      document.getElementById('fStarHealth').value = y.stats?.health || 3;
+      document.getElementById('fStarWork').value   = y.stats?.work   || 3;
       document.getElementById('fLat').value      = y.lat || '';
       document.getElementById('fLng').value      = y.lng || '';
       if (y.image) this._showPreview(y.image);
@@ -4401,6 +4454,12 @@ const Admin = {
         money:   document.getElementById('fMoney').value,
         health:  document.getElementById('fHealth').value,
         work:    document.getElementById('fWork').value,
+      },
+      stats: {
+        love:   parseInt(document.getElementById('fStarLove').value)   || 3,
+        money:  parseInt(document.getElementById('fStarMoney').value)  || 3,
+        health: parseInt(document.getElementById('fStarHealth').value) || 3,
+        work:   parseInt(document.getElementById('fStarWork').value)   || 3,
       },
       lat:   parseFloat(document.getElementById('fLat').value) || null,
       lng:   parseFloat(document.getElementById('fLng').value) || null,
@@ -4475,6 +4534,11 @@ const Admin = {
      'fLuckyAction','fLuckyItem','fLuckyColor','fBoostName','fBoostMsg'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
+    });
+    // 星はデフォルト3にリセット
+    ['fStarLove','fStarMoney','fStarHealth','fStarWork'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '3';
     });
     document.getElementById('fRank').value = 'A';
     document.getElementById('fLocation').value = 'kamakura';

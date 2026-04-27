@@ -1773,6 +1773,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
       <div class="form-group">
         <label>ランク</label>
         <select id="fRank">
+          <option value="SSS">SSS（店舗限定）</option>
           <option value="SS">SS（最高）</option>
           <option value="S">S</option>
           <option value="A">A</option>
@@ -3841,6 +3842,12 @@ body {
     document.getElementById('adminCloseBtn').addEventListener('click', () => Admin.close());
     document.getElementById('adminAddBtn').addEventListener('click', () => Admin.openModal());
     document.getElementById('modalCloseBtn').addEventListener('click', () => Admin.closeModal());
+
+    // ランク変更時にSSS専用フィールドを表示/非表示
+    document.getElementById('fRank').addEventListener('change', (e) => {
+      const sssFields = document.getElementById('sssFields');
+      if (sssFields) sssFields.style.display = e.target.value === 'SSS' ? 'block' : 'none';
+    });
 
     // 利用規約・プライバシーポリシー
     document.getElementById('tosLink').addEventListener('click', e => {

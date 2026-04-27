@@ -7,27 +7,52 @@
 <title>鎌倉妖怪守護神おみくじ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer, setDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+<!-- Firebase SDK (compat版 — 初期化タイミング問題を回避) -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.7.1/firebase-firestore-compat.min.js"></script>
+<script>
+(function() {
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBg6TVHUs1_PPonn0a_wtY1nOfGqMvF564",
+    authDomain:        "kamakura-yokai-omikuji.firebaseapp.com",
+    projectId:         "kamakura-yokai-omikuji",
+    storageBucket:     "kamakura-yokai-omikuji.firebasestorage.app",
+    messagingSenderId: "879063650096",
+    appId:             "1:879063650096:web:06e419501569c40d8382f5",
+    measurementId:     "G-XK7FF8EQXH"
+  };
 
-const firebaseConfig = {
-  apiKey:            "AIzaSyBg6TVHUs1_PPonn0a_wtY1nOfGqMvF564",
-  authDomain:        "kamakura-yokai-omikuji.firebaseapp.com",
-  projectId:         "kamakura-yokai-omikuji",
-  storageBucket:     "kamakura-yokai-omikuji.firebasestorage.app",
-  messagingSenderId: "879063650096",
-  appId:             "1:879063650096:web:06e419501569c40d8382f5",
-  measurementId:     "G-XK7FF8EQXH"
-};
+  const fbApp = firebase.initializeApp(firebaseConfig);
+  const db    = fbApp.firestore();
 
-const fbApp = initializeApp(firebaseConfig);
-const db    = getFirestore(fbApp);
+  // compat版のラッパー（既存コードの window.__FB__ インターフェースに合わせる）
+  window.__FB__ = {
+    db,
+    // collection
+    collection: (d, path) => d.collection(path),
+    // addDoc
+    addDoc: (ref, data) => ref.add(data),
+    // getDocs
+    getDocs: (ref) => ref.get(),
+    // setDoc
+    setDoc: (ref, data) => ref.set(data),
+    // doc
+    doc: (d, path, id) => d.collection(path).doc(id),
+    // deleteDoc
+    deleteDoc: (ref) => ref.delete(),
+    // query / orderBy / limit（compat版はメソッドチェーンで使う）
+    query:   (ref, ...args) => args.reduce((r, fn) => fn(r), ref),
+    orderBy: (field, dir) => (ref) => ref.orderBy(field, dir || 'asc'),
+    limit:   (n)           => (ref) => ref.limit(n),
+    // getCountFromServer（compat版は size プロパティで代替）
+    getCountFromServer: async (ref) => {
+      const snap = await ref.get();
+      return { data: () => ({ count: snap.size }) };
+    },
+  };
 
-// グローバルに公開（メインスクリプトから使用）
-window.__FB__ = { db, collection, addDoc, getDocs, query, orderBy, limit, getCountFromServer, setDoc, doc, deleteDoc };
-console.log('✅ Firebase 初期化完了');
+  console.log('✅ Firebase 初期化完了 (compat)');
+})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -2136,12 +2161,8 @@ const Stats = {
     try {
       const fb = window.__FB__;
       if (!fb) return;
-      const { db, collection, addDoc } = fb;
-      await addDoc(collection(db, 'omikuji_logs'), {
-        yokaiId,
-        yokaiName,
-        rank,
-        location,
+      await fb.db.collection('omikuji_logs').add({
+        yokaiId, yokaiName, rank, location,
         time: new Date().toISOString(),
         date: new Date().toLocaleDateString('ja-JP')
       });
@@ -2155,9 +2176,8 @@ const Stats = {
     try {
       const fb = window.__FB__;
       if (!fb) throw new Error('FB未初期化');
-      const { db, collection, getCountFromServer } = fb;
-      const snap = await getCountFromServer(collection(db, 'omikuji_logs'));
-      return snap.data().count;
+      const snap = await fb.db.collection('omikuji_logs').get();
+      return snap.size;
     } catch(e) {
       console.warn('[Firebase] getTotal失敗:', e.message);
       return this._local().total || 0;
@@ -2169,8 +2189,7 @@ const Stats = {
     try {
       const fb = window.__FB__;
       if (!fb) throw new Error('FB未初期化');
-      const { db, collection, getDocs } = fb;
-      const snap = await getDocs(collection(db, 'omikuji_logs'));
+      const snap = await fb.db.collection('omikuji_logs').get();
       const count = {};
       snap.forEach(doc => {
         const d = doc.data();
@@ -3039,21 +3058,20 @@ const App = {
   async _loadYokaiFirestore() {
     try {
       const fb = window.__FB__;
-      if (!fb) return;
-      const { db, collection, getDocs } = fb;
-      const snap = await getDocs(collection(db, 'yokai_data'));
-      if (snap.empty) return; // Firestoreにデータなし → デフォルトのまま
+      if (!fb) { console.warn('[Firebase] FB未初期化 — ローカルデータを使用'); return; }
+      const db = fb.db;
+
+      const snap = await db.collection('yokai_data').get();
+      if (snap.empty) return;
 
       const fbData = [];
       snap.forEach(doc => fbData.push(doc.data()));
 
       if (fbData.length > 0) {
-        // Firestoreのデータで更新
-        Storage.set('yokaiData', fbData); // ローカルにもキャッシュ
+        Storage.set('yokaiData', fbData);
         this.yokaiList = ShopManager.getAllYokai(fbData);
         this._updateUI();
         this._renderBook();
-        // 管理画面が開いていれば再描画
         const overlay = DOM.adminOverlay();
         if (overlay && overlay.classList.contains('show')) {
           Admin._renderGrid();
@@ -3068,38 +3086,37 @@ const App = {
 
   // Firestore + LocalStorage 両方に保存
   async _saveYokai() {
-    // 通常88体のみ保存（SSS20体はコードで管理）
     const saveData = this.yokaiList.filter(y => y.rank !== 'SSS');
 
-    // LocalStorageに保存（即時）
+    // LocalStorageに即時保存
     Storage.set('yokaiData', saveData);
 
-    // Firestoreに保存（非同期）
+    // Firestoreに保存
     try {
       const fb = window.__FB__;
-      if (!fb) return;
-      const { db, collection, addDoc, getDocs, deleteDoc, doc, setDoc } = fb;
-
-      // yokai_dataコレクションを全件削除して書き直す
-      const colRef = collection(db, 'yokai_data');
+      if (!fb) { toast('⚠ Firebase未接続（ローカルのみ保存）'); return; }
+      const db = fb.db;
+      const colRef = db.collection('yokai_data');
 
       // 既存を全削除
-      const existing = await getDocs(colRef);
-      const deletePromises = [];
-      existing.forEach(d => deletePromises.push(deleteDoc(d.ref)));
-      await Promise.all(deletePromises);
+      const existing = await colRef.get();
+      const batch = db.batch();
+      existing.forEach(d => batch.delete(d.ref));
+      await batch.commit();
 
-      // 全件書き込み（idをドキュメントIDに使用）
-      const writePromises = saveData.map(y => {
-        return fb.setDoc(fb.doc(db, 'yokai_data', String(y.id)), y);
+      // 全件書き込み
+      const writeBatch = db.batch();
+      saveData.forEach(y => {
+        const ref = colRef.doc(String(y.id));
+        writeBatch.set(ref, y);
       });
-      await Promise.all(writePromises);
+      await writeBatch.commit();
 
       console.log('✅ Firestore に妖怪データを保存:', saveData.length, '体');
       setTimeout(() => toast('☁️ クラウドに保存しました！'), 300);
     } catch(e) {
       console.warn('[Firebase] yokai_data 保存失敗:', e.message);
-      setTimeout(() => toast('⚠ クラウド保存に失敗しました（ローカルには保存済み）'), 300);
+      setTimeout(() => toast('⚠ クラウド保存に失敗（ローカルには保存済み）'), 300);
     }
   },
   _checkShopAccess() {
@@ -4081,10 +4098,11 @@ const Admin = {
     try {
       const fb = window.__FB__;
       if (!fb) throw new Error('Firebase未初期化');
-      const { db, collection, getDocs, query, orderBy, limit } = fb;
 
-      const q    = query(collection(db, 'omikuji_logs'), orderBy('time', 'desc'), limit(200));
-      const snap = await getDocs(q);
+      const snap = await fb.db.collection('omikuji_logs')
+        .orderBy('time', 'desc')
+        .limit(200)
+        .get();
 
       const rows = [];
       snap.forEach(doc => rows.push({ id: doc.id, ...doc.data() }));

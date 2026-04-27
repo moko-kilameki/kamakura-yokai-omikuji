@@ -1847,8 +1847,29 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
     </div>
 
     <div class="form-group">
-      <label>占い結果</label>
-      <textarea id="fFortune" placeholder="おみくじの文言"></textarea>
+      <label>総合運（メイン）</label>
+      <textarea id="fFortune" placeholder="おみくじの文言（例：大吉。人生の転機が訪れる）"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>💕 恋愛運</label>
+        <input type="text" id="fLove" placeholder="運命の出会いあり">
+      </div>
+      <div class="form-group">
+        <label>💰 金運</label>
+        <input type="text" id="fMoney" placeholder="大きな収入のチャンス">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>💪 健康運</label>
+        <input type="text" id="fHealth" placeholder="非常に良好">
+      </div>
+      <div class="form-group">
+        <label>💼 仕事運</label>
+        <input type="text" id="fWork" placeholder="成功の波に乗る">
+      </div>
     </div>
 
     <div class="form-row">
@@ -1874,26 +1895,6 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; }
       <div class="form-group">
         <label>店舗ID（QRのURLパラメータ ?shop=〇〇）</label>
         <input type="text" id="fShopId" placeholder="例：enoshima_cafe">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>恋愛運テキスト</label>
-          <input type="text" id="fLove" placeholder="運命の出会いあり">
-        </div>
-        <div class="form-group">
-          <label>金運テキスト</label>
-          <input type="text" id="fMoney" placeholder="大きな収入のチャンス">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>健康運テキスト</label>
-          <input type="text" id="fHealth" placeholder="非常に良好">
-        </div>
-        <div class="form-group">
-          <label>仕事運テキスト</label>
-          <input type="text" id="fWork" placeholder="成功の波に乗る">
-        </div>
       </div>
       <div class="form-group">
         <label>ラッキー行動</label>
@@ -4339,6 +4340,11 @@ const Admin = {
       document.getElementById('fLocation').value = y.location;
       document.getElementById('fDesc').value     = y.description;
       document.getElementById('fFortune').value  = (y.fortune && typeof y.fortune === 'object') ? y.fortune.overall : (y.fortune || '');
+      // 全ランク共通：4運勢
+      document.getElementById('fLove').value     = y.fortune?.love   || '';
+      document.getElementById('fMoney').value    = y.fortune?.money  || '';
+      document.getElementById('fHealth').value   = y.fortune?.health || '';
+      document.getElementById('fWork').value     = y.fortune?.work   || '';
       document.getElementById('fLat').value      = y.lat || '';
       document.getElementById('fLng').value      = y.lng || '';
       if (y.image) this._showPreview(y.image);
@@ -4389,13 +4395,13 @@ const Admin = {
       rank,
       location: document.getElementById('fLocation').value,
       description: document.getElementById('fDesc').value,
-      fortune: isSSS ? {
+      fortune: {
         overall: document.getElementById('fFortune').value,
         love:    document.getElementById('fLove').value,
         money:   document.getElementById('fMoney').value,
         health:  document.getElementById('fHealth').value,
         work:    document.getElementById('fWork').value,
-      } : { overall: document.getElementById('fFortune').value, love:'', money:'', health:'', work:'' },
+      },
       lat:   parseFloat(document.getElementById('fLat').value) || null,
       lng:   parseFloat(document.getElementById('fLng').value) || null,
       image: document.getElementById('fImage').value || null,

@@ -2077,27 +2077,31 @@ const Omikuji = {
   /**
    * ⑦ 出現確率テーブル
    * SS: 1%  S: 5%  A: 20%  B: 30%  C: 44%
+   * ※ SSS は店舗QRからのみ出現（通常抽選対象外）
    */
   RANK_WEIGHTS: { SS:1, S:5, A:20, B:30, C:44 },
 
   draw(yokaiList, spotId) {
     if (!yokaiList || yokaiList.length === 0) return null;
 
+    // SSSは通常抽選対象外
+    const normalList = yokaiList.filter(y => y.rank !== 'SSS');
+
     // 確率テーブルからランクを決定
     const targetRank = this._rollRank();
 
     // 対象スポット内の、決定ランクの妖怪プールを組む
-    let pool = yokaiList.filter(y =>
+    let pool = normalList.filter(y =>
       (y.location === spotId || y.location === 'global') && y.rank === targetRank
     );
 
-    // ランクが一致しない場合は同スポット全体から
+    // ランクが一致しない場合は同スポット全体から（SSS除く）
     if (pool.length === 0) {
-      pool = yokaiList.filter(y => y.location === spotId || y.location === 'global');
+      pool = normalList.filter(y => y.location === spotId || y.location === 'global');
     }
 
-    // それでも空なら全体から
-    if (pool.length === 0) pool = yokaiList;
+    // それでも空なら全体から（SSS除く）
+    if (pool.length === 0) pool = normalList;
 
     return pool[Math.floor(Math.random() * pool.length)];
   },

@@ -3939,19 +3939,24 @@ body {
     qrEl.innerHTML = '';
     try {
       const fortune = (y.fortune && typeof y.fortune === 'object') ? y.fortune : null;
+      const overall = fortune ? fortune.overall : (y.fortune || '');
+
+      // URLを短くするため最小限のデータのみ
+      // overall は先頭15文字まで（長すぎるとQRが読み取れない）
       const shareData = {
-        id:      y.id,
-        name:    y.name,
-        emoji:   y.emoji,
-        rank:    y.rank,
-        overall: fortune ? fortune.overall : (y.fortune || ''),
-        love:    fortune?.love    || '',
-        spot:    y.boostSpot?.name || '',
-        spotType:y.boostSpot?.type || '',
+        id:   y.id,
+        name: y.name,
+        rank: y.rank,
+        ov:   overall.slice(0, 15),   // overall 短縮
+        sp:   y.boostSpot?.name?.slice(0, 15) || '',  // spot 短縮
       };
       const url = `${location.href.split('?')[0]}?result=${encodeURIComponent(JSON.stringify(shareData))}`;
-      new QRCode(qrEl, { text: url, width: 160, height: 160,
-        colorDark:'#1a1008', colorLight:'#f5efe0', correctLevel: QRCode.CorrectLevel.H });
+      new QRCode(qrEl, {
+        text: url,
+        width: 180, height: 180,
+        colorDark: '#1a1008', colorLight: '#f5efe0',
+        correctLevel: QRCode.CorrectLevel.M  // H→M に変更（データ量増加に対応）
+      });
     } catch(e) { console.warn('QRCode生成失敗', e); }
   },
 
@@ -3960,32 +3965,34 @@ body {
     const p = new URLSearchParams(location.search).get('result');
     if (!p) return;
     try {
-      const y = JSON.parse(decodeURIComponent(p));
+      const d = JSON.parse(decodeURIComponent(p));
       const area = DOM.resultArea();
 
-      const spotHtml = y.spot ? `
+      // 短縮キー（新）と旧キー両対応
+      const name    = d.name    || '';
+      const rank    = d.rank    || 'C';
+      const overall = d.overall || d.ov || '';
+      const spot    = d.spot    || d.sp || '';
+
+      // IDからApp.yokaiListで詳細を補完
+      const full = d.id ? App.yokaiList.find(y => y.id === d.id) : null;
+      const emoji = full?.emoji || d.emoji || '👻';
+
+      const spotHtml = spot ? `
         <div class="boost-spot-card" style="cursor:default;margin-top:16px">
           <span class="boost-spot-pin">📍</span>
           <div class="boost-spot-body">
-            <span class="boost-spot-type">${y.spotType || 'おすすめスポット'}</span>
-            <span class="boost-spot-name">${y.spot}</span>
+            <span class="boost-spot-name">${spot}</span>
           </div>
-        </div>` : '';
-
-      const loveHtml = y.love ? `
-        <div class="fortune-stat-item" style="margin-top:12px;text-align:left;padding:10px 14px;background:rgba(245,239,224,0.04);border:1px solid rgba(245,239,224,0.08);border-radius:10px">
-          <span class="fortune-stat-label">💕 恋愛運</span>
-          <span class="fortune-stat-text">${y.love}</span>
         </div>` : '';
 
       area.innerHTML = `
         <div class="shared-banner">👥 友達からシェアされた占い結果</div>
         <div class="result-card">
-          <span class="result-emoji">${y.emoji||'👻'}</span>
-          <div class="result-rank-badge rank-${y.rank}">RANK ${y.rank}</div>
-          <div class="result-name">${y.name}</div>
-          <div class="fortune-overall">総合運 ── ${y.overall || ''}</div>
-          ${loveHtml}
+          <span class="result-emoji">${emoji}</span>
+          <div class="result-rank-badge rank-${rank}">RANK ${rank}</div>
+          <div class="result-name">${name}</div>
+          <div class="fortune-overall">総合運 ── ${overall}</div>
           ${spotHtml}
           <p class="result-desc" style="margin-top:20px;color:rgba(245,239,224,0.4)">
             あなたもおみくじを引いてみよう！
